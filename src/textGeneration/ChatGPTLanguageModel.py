@@ -111,7 +111,7 @@ Table: Persons
 -----------
 Name | Year | Country | Salary
 -----------
-Mary | 35 | ITA | 10000
+Mary | 35 | UK | 10000
 Paul | 45 | SPA | 2000
 ----------
 
@@ -150,7 +150,7 @@ Table: Persons
 -----------
 Name | Surname | Year | City
 -----------
-Mary | Rossi | 50 | PZ
+Mary | Rossi | 50 | London
 Paul | Verdi | 30 | Rome
 ----------
 
@@ -300,13 +300,13 @@ Table: Persons
 -----------
 Name | Country
 -----------
-Mary | ITA
-Paul | ITA
-Mike | ITA
+Mary | UK
+Paul | UK
+Mike | UK
 ----------
 
-Task: filter(= ITA, country), compute(count,*)=3, read(Name,Country)
-Example: There are three persons from Italy. Namely Mary, Paul and Mike.
+Task: filter(= UK, country), compute(count,*)=3, read(Name,Country)
+Example: There are three persons from UK. Namely Mary, Paul and Mike.
 """)
         prompt = "\n==========".join(examples) + "\n=========="
         return prompt
