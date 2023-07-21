@@ -66,6 +66,12 @@ class OperatorFilter(IOperator):
     def __repr__(self):
        return "Filter on" + self.attribute + "with " + self.comparator
 
+    def getScore(self):
+        return 1.0
+
+    def getTenetName(self):
+        return Constants.OPERATION_FILTER
+
     def difference(self, l1, l2):
         freq1 = Counter(l1)
         freq2 = Counter(l2)

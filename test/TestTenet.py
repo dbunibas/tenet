@@ -134,6 +134,7 @@ class TestTenet(unittest.TestCase):
         rateLimit = True
         sleepTime = 21  ## rateLimit 3 requests per minute
         tenet = Tenet(self.database, seed, operations, comparisons, bestEvidences, sentencesPerExample, languageModel, rateLimit, sleepTime)
+        ## if evidenceSel is None then Cold
         positiveExamples = tenet.generatePositiveExamples(tableName, evidenceSel, numEvidence)
         negativeExamples = tenet.generateNegativeExamples(tableName, evidenceSel, numEvidence, addRows, rowsToAdd, removeRows, rowsToRemove, strategy, useLM=useLM)
         table = self.database.getTableByName(tableName)

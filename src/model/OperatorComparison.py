@@ -37,6 +37,12 @@ class OperatorComparison(IOperator):
         #return readOp + ", compare("+ keyAttribute.lower() + "," + self.comparator + "," + self.attribute.lower() + ")"
         return readOp + ", compare(" + self.comparator + "," + self.attribute.lower() + ")"
 
+    def getScore(self):
+        return 0.1
+
     def __repr__(self):
         sName =  "Comparison - " + self.comparator + " on " + self.attribute
         return sName
+
+    def getTenetName(self):
+        return Constants.OPERATION_COMPARISON

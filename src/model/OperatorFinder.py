@@ -1,10 +1,20 @@
 from src import Constants
+from src.LoggedDecorators import timed
 from src.model.OperatorAggregativeFunction import OperatorAggregativeFunction
+from src.model.OperatorCombined import OperatorCombined
 from src.model.OperatorComparison import OperatorComparison
 from src.model.OperatorFilter import OperatorFilter
 from src.model.OperatorLookup import OperatorLookup
 from src.model.OperatorMinMax import OperatorMinMax
+from src.model.OperatorPercentage import OperatorPercentage
+from src.model.OperatorRanked import OperatorRanked
+from src.model.OperatorRankedSimple import OperatorRankedSimple
+import traceback
+import itertools
+import logging
+import time
 
+logger = logging.getLogger(__name__)
 
 class OperatorFinder:
     def __init__(self, evidence, database, operations, comparisons):
@@ -14,17 +24,50 @@ class OperatorFinder:
         self.comparisons = comparisons
         self.allowedOperations = []
         self.operators = []
+        self.statistics = None
 
-    def exploreAll(self):
+    def setStatistics(self, statisticsObj):
+        self.statistics = statisticsObj
+
+    #@timed
+    def exploreAll(self, composedOperations=False):
         self.buildOperators()
+        operationsForCombination = []
+        #print("Operators to explore: ", len(self.operators))
+        counterChecked = 0
         for operator in self.operators:
             try:
-                if operator.checkSemantic(self.evidence, self.database): self.allowedOperations.append(operator)
+                start = time.time();
+                #print("Try:", operator)
+                check = operator.checkSemantic(self.evidence, self.database)
+                if check:
+                    self.allowedOperations.append(operator)
+                    if operator.__class__.__name__ in [OperatorAggregativeFunction.__name__, OperatorMinMax.__name__,
+                                                       OperatorFilter.__name__, OperatorComparison.__name__]:
+                        operationsForCombination.append(operator)
+                    self.statistics.addOrUpdate("Valid_" + operator.__class__.__name__, 1)
+                    counterChecked += 1
+                end = time.time()
+                if self.statistics is not None:
+                    self.statistics.addOrUpdate("Checking_" + operator.__class__.__name__, (end-start))
+                    self.statistics.addOrUpdate("Tested_" + operator.__class__.__name__, 1)
+                #print(operator.__class__.__name__, "{:.10f}".format(end - start), check, sep="\t")
             except Exception:
-                # print("Exception with: " + str(operator))
+                #pass
+                #logger.error("Exception with: " + str(operator))
+                #traceback.print_exc()
                 pass
-                # TODO: log exceptions
-        ## TODO: compose allowedOperations?
+        #print("Passed", counterChecked, "over", len(self.operators))
+        if composedOperations:
+            operationsToAdd = []
+            #for size in range(2, len(self.allowedOperations) + 1):
+            for size in range(2, 4): ## limit compositions
+                #for combination in itertools.permutations(operationsForCombination, size):
+                for combination in itertools.combinations(operationsForCombination, size):
+                    operator = OperatorCombined(list(combination))
+                    if operator.checkSemantic(self.evidence, self.database): operationsToAdd.append(operator)
+            self.allowedOperations += operationsToAdd
+
 
     def buildOperators(self):
         for operation in self.operations:
@@ -48,6 +91,9 @@ class OperatorFinder:
         if operation in [Constants.OPERATION_MIN, Constants.OPERATION_MAX]:
             operator = OperatorMinMax(attribute, operation)
             operators.append(operator)
+        if operation in [Constants.OPERATION_PERCENTAGE]:
+            operator = OperatorPercentage(attribute)
+            operators.append(operator)
         if operation in [Constants.OPERATION_COUNT, Constants.OPERATION_SUM, Constants.OPERATION_AVG]:
             ## WE CANNOT GENERATE IT UNLESS WE TRY ALL THE POSSIBLE COMBINATIONS PAIRWISE ATTRIBUTES
             operator = OperatorAggregativeFunction(attribute, operation)
@@ -58,4 +104,10 @@ class OperatorFinder:
                         operator = OperatorAggregativeFunction(attribute, operation)
                         operator.setFilter(filterAttribute, comparator)
                         operators.append(operator)
+        if operation in [Constants.OPERATION_RANKED]:
+            for subjAttribute in self.evidence.getHeaderNames():
+                if attribute != subjAttribute:
+                    #operator = OperatorRanked(attribute, subjAttribute)
+                    operator = OperatorRankedSimple(attribute, subjAttribute)
+                    operators.append(operator)
         return operators

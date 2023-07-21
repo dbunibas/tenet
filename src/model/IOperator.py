@@ -7,6 +7,12 @@ class IOperator:
         """Generate the operator for the languageModel"""
         pass
 
+    def getScore(self):
+        pass
+
+    def getTenetName(self):
+        pass
+
     def linearizeEvidence(self, evidence) -> str:
         """Generate evidence linearization"""
         #TODO: maybe use a dict as extra parameter, or pass a linearizationObj and use it

@@ -60,7 +60,6 @@ class OperatorAggregativeFunction(IOperator):
         #     return True
 
 
-
     def printOperator(self, evidence, database, attributes=None) -> str:
         #compute(avg,Kilometers)=19000
         sValue = ""
@@ -70,6 +69,16 @@ class OperatorAggregativeFunction(IOperator):
         if self.operatorFilter is not None:
             prefix = self.operatorFilter.printOperator(evidence, database)+","
         return prefix+"compute(" + self.function + "," + self.attribute.lower() +  ")" +sValue
+
+    def getScore(self):
+        if self.operatorFilter is not None:
+            if self.function == Constants.OPERATION_AVG: return 9.0
+            if self.function == Constants.OPERATION_SUM: return 8.0
+            return 7.0
+        else:
+            if self.function == Constants.OPERATION_AVG: return 6.0
+            if self.function == Constants.OPERATION_SUM: return 5.0
+            return 4.0
 
     def computeValue(self, values):
         if self.function == Constants.OPERATION_SUM:
@@ -86,4 +95,7 @@ class OperatorAggregativeFunction(IOperator):
         if self.attributeFilter is not None:
             sName += "-Filter on: " + self.attributeFilter + " with: " + str(self.operatorFilter)
         return sName
+
+    def getTenetName(self):
+        return self.function
 

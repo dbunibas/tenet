@@ -1,5 +1,6 @@
 from src import Constants
 from src.model.IOperator import IOperator
+import time
 
 
 class OperatorMinMax(IOperator):
@@ -38,5 +39,11 @@ class OperatorMinMax(IOperator):
             sValue = "=" + str(self.value)
         return "compute(" + self.function +","+ self.attribute.lower() + ")" + sValue
 
+    def getScore(self):
+        return 10.0
+
     def __repr__(self):
        return self.function + " on " + self.attribute
+
+    def getTenetName(self):
+        return self.function

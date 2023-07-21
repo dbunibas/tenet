@@ -1,7 +1,9 @@
 from src import Constants
+from src.LoggedDecorators import timed
 from src.model.ISearchStrategy import ISearchStrategy
 from src.model.RelationalTable import Evidence, Cell
-from src.queryExecutor.InMemoryExecutor import run
+from src.queryExecutor.InMemoryExecutor import run as runInMemory
+from src.queryExecutor.PostgresExecutor import run as runPostgres
 import re
 import pandas as pd
 
@@ -16,11 +18,13 @@ class WarmSearch(ISearchStrategy):
 
     def findEvidences(self, table, numExamples, evidence):
         if evidence is None: return None ## TODO: return an exception?
+        if table is None: return None
         graph = self.getGraph(evidence, table)
         query, attrMapping = self.createQuery(graph, table)
-        evidences = self.executeQuery(query, table, attrMapping, numExamples)
+        evidences = self.executeQuery(query, table, attrMapping, numExamples, evidence)
         return evidences
 
+    #@timed
     def createQuery(self, graph, table, tableName="df_table", limit=800): ## tableName is fixed for duckDB
         attrMapping = {}
         nb_nodes = len(graph.keys())
@@ -95,6 +99,7 @@ class WarmSearch(ISearchStrategy):
         txt_select = txt_select[:-2]
         return txt_select + txt_from + txt_where + ' LIMIT ' + str(limit), attrMapping
 
+    #@timed
     def getGraph(self, evidence, table):
         cellPos = []
         for row in evidence.rows:
@@ -118,8 +123,14 @@ class WarmSearch(ISearchStrategy):
                     graph[i]['same_col'] += [t]
         return graph
 
-    def executeQuery(self, query, table, attrMapping, maxExamples, shuffle=False):
-        df = run(query, table, attrMapping)
+    #@timed
+    def executeQuery(self, query, table, attrMapping, maxExamples, evidence, shuffle=False):
+        #print("*** Query:", query)
+        df = None
+        if evidence.getNumberOfCells() > 10 or len(table.rows) > 50:
+            df = runPostgres(query, table, attrMapping)
+        else:
+            df = runInMemory(query, table, attrMapping)
         # df.drop(list(df.filter(regex='key')), axis=1, inplace=True) ## drop key columns
         result = None
         if shuffle:
@@ -130,7 +141,7 @@ class WarmSearch(ISearchStrategy):
         else:
             result = df.head(maxExamples)
         select = query.split("FROM")[0].replace("SELECT", "").strip()
-        ts = re.findall("t[0-9]", select)
+        ts = re.findall("t[0-9]+", select)
         atts = select.split(",")
         ts = [a for i, a in enumerate(ts) if not i % 2]
         atts = [a for i, a in enumerate(atts) if not i % 2]

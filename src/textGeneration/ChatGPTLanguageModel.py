@@ -1,9 +1,10 @@
+import time
 import openai
 import json
 import io
 import os
-import time
 from src import Constants
+from src.LoggedDecorators import timed
 from src.textGeneration.ILanguageModel import ILanguageModel
 
 
@@ -21,24 +22,40 @@ class ChatGPTLanguageModel(ILanguageModel):
         self.temperature = 0.5
         self.maxGenerated = 10
         if self.useCache and os.path.isfile(self.cacheFile):
-            print("*** CACHE FILE: ", self.cacheFile)
+            #print("*** CACHE FILE: ", self.cacheFile)
             with open(self.cacheFile, 'r') as f:
                 listPrompts = json.load(f)
             for item in listPrompts:
                 self.cache[item['prompt']] = item['texts']
         self.usedTokens = 0
-        self.price = 0.0
+        self.timeElapsed = 0.0
+        self.statistics = None
 
     def setUseCache(self, useCache):
+        ### key= prompt, val = {"text": text, "tokens": tokens, "time": time}
         self.useCache = useCache
 
     def setEnableGPT(self, enableGPT):
         self.enableGPT = enableGPT
 
+    def setStatistics(self, statisticsObj):
+        self.statistics = statisticsObj
+
+    #@timed
     def generateText(self, prompt) -> list:
         texts = None
         if self.useCache:
-            texts = self.cache.get(prompt)
+            cachedResult = self.cache.get(prompt)
+            if cachedResult is not None:
+                texts = cachedResult.get("text")
+                if texts is not None:
+                    tokens = cachedResult.get("tokens")
+                    timeElapsed = cachedResult.get("time")
+                    self.usedTokens += tokens
+                    self.timeElapsed += timeElapsed
+                    if self.statistics is not None:
+                        self.statistics.data[Constants.STATISTICS_TEXT_GENERATION] += timeElapsed
+                        self.statistics.data[Constants.STATISTICS_USED_TOKENS] += tokens
         if texts is None and self.enableGPT:
             openai.api_key = Constants.API_KEYS_GPT3[self.api_key_index]
             self.api_key_index = (self.api_key_index + 1) % len(Constants.API_KEYS_GPT3)
@@ -51,6 +68,7 @@ class ChatGPTLanguageModel(ILanguageModel):
                 {"role": "user", "content": prompt}
             ]
             #print("* Prompt:", prompt)
+            start_time = time.time()
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=promptMessages,
@@ -61,13 +79,17 @@ class ChatGPTLanguageModel(ILanguageModel):
                 # presence_penalty=0
                 n=self.maxGenerated,
             )
+            end_time = time.time()
+            elapsed_time = end_time-start_time
             #print(".", end="", flush=True)
             texts = []
             for i in range(0, len(response["choices"])):
                 texts.append(response["choices"][i]["message"]["content"])
             self.counterRequest += 1
+            usedTokens = response["usage"]["total_tokens"]
             if self.useCache:
-                self.cache[prompt] = texts
+                result = {"text":texts, "tokens":usedTokens, "time": elapsed_time}
+                self.cache[prompt] = result
                 toJson = []
                 for key, value in self.cache.items():
                     toJson.append({"prompt": key, "texts": value})
@@ -76,11 +98,16 @@ class ChatGPTLanguageModel(ILanguageModel):
                     f.write(jsonString)
             if self.rateLimit:
                 time.sleep(self.sleepTime)
-            usedTokens = response["usage"]["total_tokens"]
             priceTokens = (usedTokens / 1000) * 0.002
             self.usedTokens += usedTokens
-            self.price += priceTokens
+            self.timeElapsed += elapsed_time
+            if self.statistics is not None:
+                self.statistics.data[Constants.STATISTICS_TEXT_GENERATION] += elapsed_time
+                self.statistics.data[Constants.STATISTICS_USED_TOKENS] += usedTokens
         return texts
+
+    def getPrice(self):
+        return (self.usedTokens/1000) * 0.002
 
     def generatePrompt(self, evidence, commandOperation) -> str:
         basePrompt = self.getBasePrompt()
@@ -96,14 +123,14 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 35
+Enzo | 35
 null | null
-Paul | 45
+Paolo | 45
 John | null
 ----------
 
 Task: read(name,year)[*]
-Example: Mary is 35 and Paul is 45 years old.
+Example: Enzo is 35 and Paolo is 45 years old.
 """)
 
         examples.append("""
@@ -111,12 +138,12 @@ Table: Persons
 -----------
 Name | Year | Country | Salary
 -----------
-Mary | 35 | UK | 10000
-Paul | 45 | SPA | 2000
+Enzo | 35 | ITA | 10000
+Paolo | 45 | SPA | 2000
 ----------
 
 Task: read(name,year)[*]
-Example: Mary is 35 and Paul is 45 years old.
+Example: Enzo is 35 and Paolo is 45 years old.
 """)
 
         examples.append("""
@@ -124,12 +151,12 @@ Table: Persons
 -----------
 Name | Year | Income
 -----------
-Paul | 45 | 1500
-Mary | 35 | 1000
+Paolo | 45 | 1500
+Enzo | 35 | 1000
 ----------
 
 Task: read(name,year,income)[*], compare(<,year), compare(>,income)
-Example: Mary is 35 years old and is younger than Paul. But Paul has an income of 1500 that is higher than the Mary's income that is 1000.
+Example: Enzo is 35 years old and is younger than Paolo. But Paolo has an income of 1500 that is higher than the Enzo's income that is 1000.
 """)
 
         examples.append("""
@@ -137,12 +164,12 @@ Table: Persons
 -----------
 Name | Surname | Year
 -----------
-Mary | Rossi | 35
-Paul | Verdi | 45
+Enzo | Rossi | 35
+Paolo | Verdi | 45
 ----------
 
 Task: read(name, surname)[*], compare(>,year)
-Example: Paul Verdi is older than Mary Rossi.
+Example: Paolo Verdi is older than Enzo Rossi.
 """)
 
         examples.append("""
@@ -150,12 +177,12 @@ Table: Persons
 -----------
 Name | Surname | Year | City
 -----------
-Mary | Rossi | 50 | London
-Paul | Verdi | 30 | Rome
+Enzo | Rossi | 50 | PZ
+Paolo | Verdi | 30 | Rome
 ----------
 
 Task: read(surname,name)[*], compare(<,year)
-Example: Verdi Paul is younger than Rossi Mary.
+Example: Verdi Paolo is younger than Rossi Enzo.
 """)
 
         examples.append("""
@@ -176,25 +203,25 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 35
-Paul | 45
+Enzo | 35
+Paolo | 45
 John | 35
 -----------
 
 Task: read(name,year)[year=35], compare(<,year)
-Example: Mary and John are 35 and both are younger than Paul.
+Example: Enzo and John are 35 and both are younger than Paolo.
  """)
         examples.append("""
 Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 25
-Paul | 25
+Enzo | 25
+Paolo | 25
 ----------
 
 Task: read(name)[*], compare(=,year)
-Example: Mary and Paul have the same age.
+Example: Enzo and Paolo have the same age.
 """)
 
         examples.append("""
@@ -202,8 +229,8 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 23
-Paul | 22
+Enzo | 23
+Paolo | 22
 John | 35
 ----------
 
@@ -216,8 +243,8 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 23
-Paul | 22
+Enzo | 23
+Paolo | 22
 John | 35
 ----------
 
@@ -230,13 +257,13 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 35
-Paul | 22
+Enzo | 35
+Paolo | 22
 John | 35
 ----------
 
 Task: compute(max,year)=35, read(name,year)[max]
-Example: John and Mary are the oldest with 35 years old.
+Example: John and Enzo are the oldest with 35 years old.
 """)
 
         examples.append("""
@@ -245,12 +272,12 @@ Table: Persons
 Name | Year
 -----------
 John | 22
-Mary | 35
-Paul | 22
+Enzo | 35
+Paolo | 22
 ----------
 
 Task: compute(min,year)=22, read(name,year)[min]
-Example: Paul and John are the yougest with 22 years old.
+Example: Paolo and John are the yougest with 22 years old.
 """)
 
         examples.append("""
@@ -258,13 +285,13 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 36
-Paul | 46
+Enzo | 36
+Paolo | 46
 Mike | 18
 ----------
 
 Task: compute(count,*)=3, read(count,name)
-Example: There are three persons. Namely Mary, Paul and Mike.
+Example: There are three persons. Namely Enzo, Paolo and Mike.
 """)
 
         examples.append("""
@@ -272,8 +299,8 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 36
-Paul | 46
+Enzo | 36
+Paolo | 46
 Mike | 18
 ----------
 
@@ -286,13 +313,13 @@ Table: Persons
 -----------
 Name | Year
 -----------
-Mary | 36
-Paul | 46
+Enzo | 36
+Paolo | 46
 Mike | 18
 ----------
 
 Task: filter(> 12,age), compute(count,*)=3, read(name)
-Example: There are three persons with age greater than 12. Namely Mary, Paul and Mike.
+Example: There are three persons with age greater than 12. Namely Enzo, Paolo and Mike.
 """)
 
         examples.append("""
@@ -300,14 +327,71 @@ Table: Persons
 -----------
 Name | Country
 -----------
-Mary | UK
-Paul | UK
-Mike | UK
+Enzo | ITA
+Paolo | ITA
+Mike | ITA
 ----------
 
-Task: filter(= UK, country), compute(count,*)=3, read(Name,Country)
-Example: There are three persons from UK. Namely Mary, Paul and Mike.
+Task: filter(= ITA, country), compute(count,*)=3, read(Name,Country)
+Example: There are three persons from Italy. Namely Enzo, Paolo and Mike.
 """)
+
+        examples.append("""
+Table: Persons
+-----------
+Name | Year
+-----------
+Gianni | 50
+Enzo | 36
+Paolo | 46
+Mike | 18
+----------
+
+Task: ranked(2,asc,Year)=36
+Example: Enzo is the 2nd youngest person
+""")
+
+        examples.append("""
+Table: Persons
+-----------
+Name | Year
+-----------
+Enzo | 36
+Paolo | 46
+Mike | 18
+Gianni | 50
+----------
+
+Task: ranked(3,desc,Year)=36
+Example: Enzo is the 3rd oldest person
+""")
+
+        examples.append("""
+Table: Persons
+-----------
+Name | Income
+-----------
+Paolo | 36000
+Enzo | 24000
+----------
+
+Task: percentage(income, <)=-50.0%
+Example: Enzo has 50% of the income lower than Paolo
+""")
+
+        examples.append("""
+Table: Persons
+-----------
+Name | Income
+-----------
+Enzo | 24000
+Paolo | 36000
+----------
+
+Task: read(name,income)[*] percentage(income, >)=33.33%
+Example: Paolo has 33.33% of the income higher than Enzo
+""")
+
         prompt = "\n==========".join(examples) + "\n=========="
         return prompt
 
@@ -332,5 +416,3 @@ Example: There are three persons from UK. Namely Mary, Paul and Mike.
             linerizedTable += rowLine
         linerizedTable += lineSeparator + "\n"  # add another endline
         return linerizedTable
-
-

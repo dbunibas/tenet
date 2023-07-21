@@ -5,13 +5,19 @@ from src import Constants
 import json
 import io
 from tqdm import tqdm
+import time
+import traceback
 
+from src.LoggedDecorators import timed
 from src.model.OperatorAggregativeFunction import OperatorAggregativeFunction
+from src.model.OperatorCombined import OperatorCombined
 from src.model.OperatorComparison import OperatorComparison
 from src.model.OperatorFilter import OperatorFilter
 from src.model.OperatorFinder import OperatorFinder
 from src.model.OperatorLookup import OperatorLookup
 from src.model.OperatorMinMax import OperatorMinMax
+from src.model.OperatorRankedSimple import OperatorRankedSimple
+from src.model.OperatorPercentage import OperatorPercentage
 from src.textGeneration.ChatGPTLanguageModel import ChatGPTLanguageModel
 from src.textGeneration.ParserEvidenceGenerator import parseTables, parseEvidence
 
@@ -47,16 +53,19 @@ def containsAggregativeWithfilter(l, operation):
     return False
 
 def rarityScore(l):
+    if containsInstance(l, [OperatorCombined.__name__]): return l[0].getScore()
     if containsInstance(l, [OperatorMinMax.__name__]): return 10
     if containsInstance(l, [OperatorAggregativeFunction.__name__]):
         if containsAggregativeWithfilter(l, Constants.OPERATION_AVG): return 9
-        if containsAggregativeWithfilter(l, Constants.OPERATION_AVG): return 8
+        if containsAggregativeWithfilter(l, Constants.OPERATION_SUM): return 8
         if containsAggregativeWithfilter(l, Constants.OPERATION_COUNT): return 7
         if containsAggregativeOp(l, Constants.OPERATION_AVG): return 6
         if containsAggregativeOp(l, Constants.OPERATION_SUM): return 5
         return 4
     if containsInstance(l, [OperatorFilter.__name__]): return 1
     #if containsInstance(l, [OperatorMinMax.__name__, OperatorAggregativeFunction.__name__, OperatorFilter.__name__]): return 1
+    if containsInstance(l, [OperatorRankedSimple.__name__]): return 1.5
+    if containsInstance(l, [OperatorPercentage.__name__]): return 0.5
     if containsInstance(l, [OperatorComparison.__name__]): return 0
     return -1
 
@@ -106,7 +115,6 @@ def filterExplored(explored, sentencesPerExample, model):
             prompt = model.generatePrompt(evidence, task)
             current = (task, prompt, gen, positive, op, database)
             filtered.append(current)
-
     return filtered
 
 def exploreOutput(evidence, database, operations, comparisons, model, gen, explored, negative=False):
@@ -120,6 +128,8 @@ def exploreOutput(evidence, database, operations, comparisons, model, gen, explo
 
 def generateOutputFromExplored(explored, model):
     print("Generate the text using the Language Model")
+    counterPositive = 0
+    counterNegative = 0
     for task, prompt, gen, positive, operator, database in tqdm(explored):
         try:
             sentences = model.generateText(prompt)
@@ -133,12 +143,19 @@ def generateOutputFromExplored(explored, model):
             if not positive:
                 if 'neg_chatGPT' in gen: outputs = gen['neg_chatGPT']
                 else: gen['neg_chatGPT']= outputs
+                if not outputs: counterNegative+=1
             else:
                 if 'chatGPT' in gen: outputs = gen['chatGPT']
                 else: gen['chatGPT']= outputs
+                if not outputs: counterPositive +=1
             outputs[task] = sentences
         except:
-            pass
+            time.sleep(10)
+            print("Exception:", task)
+            #traceback.print_exc()
+            #break
+    print("Positive:", counterPositive)
+    print("Negative:", counterNegative)
 
 def generateOutput(evidence, database, operations, comparisons, model, gen, explored, negative=False):
     finder = OperatorFinder(evidence, database, operations, comparisons)
@@ -162,19 +179,19 @@ def debugPrintOperations(l):
         operations = elem[1]
         print(operations)
 
-def generateLookupOnly(generated, title):
+def generateLookupOnly(generated, title, isFeverous):
     positive = []
     negative = []
     for gen in generated:
         evidenceFromFile = gen['table']
-        evidence = parseEvidence(evidenceFromFile, title, database, skipCheck=True)
+        evidence = parseEvidence(evidenceFromFile, title, database, isFeverous, skipCheck=True)
         finder = OperatorFinder(evidence, database, [Constants.OPERATION_LOOKUP], [])
         finder.exploreAll()
         t = (evidence, finder.allowedOperations, database, gen, True)
         positive.append(t)
         #### negative
         negativeEvidence = gen['neg_table']
-        negEvidence = parseEvidence(negativeEvidence, title, database, skipCheck=True)
+        negEvidence = parseEvidence(negativeEvidence, title, database, isFeverous, skipCheck=True)
         finder = OperatorFinder(negEvidence, database, [Constants.OPERATION_LOOKUP], [])
         finder.exploreAll()
         t = (negEvidence, finder.allowedOperations, database, gen, False)
@@ -183,7 +200,7 @@ def generateLookupOnly(generated, title):
     negative = sorted(negative, key=functools.cmp_to_key(importance), reverse=True)
     return positive, negative
 
-def exploreTextForStrategy(generated, database, title, operations, comparisons, isFeverous):
+def exploreTextForStrategy(generated, database, title, operations, comparisons, isFeverous, useCombined, operationsToIgnore=None):
     positive = []
     negative = []
     for gen in generated:
@@ -191,30 +208,45 @@ def exploreTextForStrategy(generated, database, title, operations, comparisons, 
         evidence = parseEvidence(evidenceFromFile, title, database, isFeverous)
         if evidence is not None:
             finder = OperatorFinder(evidence, database, operations, comparisons)
-            finder.exploreAll()
-            t = (evidence, finder.allowedOperations, database, gen, True)
+            finder.exploreAll(useCombined)
+            t = None
+            if operationsToIgnore is None:
+                t = (evidence, finder.allowedOperations, database, gen, True)
+            else:
+                t = (evidence, filterOperations(finder.allowedOperations, operationsToIgnore), database, gen, True)
             positive.append(t)
         negativeEvidence = gen['neg_table']
         negEvidence = parseEvidence(negativeEvidence, title, database, isFeverous)
         if negEvidence is not None:
             finder = OperatorFinder(negEvidence, database, operations, comparisons)
-            finder.exploreAll()
-            t = (negEvidence, finder.allowedOperations, database, gen, False)
+            finder.exploreAll(useCombined)
+            t = None
+            if operationsToIgnore is None:
+                t = (negEvidence, finder.allowedOperations, database, gen, False)
+            else:
+                t = (negEvidence, filterOperations(finder.allowedOperations, operationsToIgnore), database, gen, False)
             negative.append(t)
     positive = sorted(positive, key=functools.cmp_to_key(importance), reverse=True)
     negative = sorted(negative, key=functools.cmp_to_key(importance), reverse=True)
     return positive, negative
 
-def generateTextForStrategy(generated, database, explored):
+def filterOperations(allOperations, operationsToIgnore):
+    filtered = []
+    for op in allOperations:
+        if op.getTenetName() not in operationsToIgnore:
+            filtered.append(op)
+    return filtered
+
+def generateTextForStrategy(generated, database, explored, isFeverous):
     for gen in generated:
         evidenceFromFile = gen['table']
         #print("Database:\n", database)
-        evidence = parseEvidence(evidenceFromFile, title, database)
+        evidence = parseEvidence(evidenceFromFile, title, database, isFeverous)
         if evidence is not None:
             #print("LOG-Evidence:\n", evidence)
             generateOutput(evidence, database, operations, comparisons, model, gen, explored)
         negativeEvidence = gen['neg_table']
-        negEvidence = parseEvidence(negativeEvidence, title, database)
+        negEvidence = parseEvidence(negativeEvidence, title, database, isFeverous)
         if negEvidence is not None:
             #print("LOG-Neg_Evidence:\n", negEvidence)
             generateOutput(negEvidence, database, operations, comparisons, model, gen, explored, negative=True)
@@ -225,24 +257,31 @@ if __name__ == '__main__':
     ## Configuration Generator
     operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
                   Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
-                  Constants.OPERATION_SUM, Constants.OPERATION_AVG]
+                  Constants.OPERATION_SUM, Constants.OPERATION_AVG,
+                  Constants.OPERATION_RANKED, Constants.OPERATION_PERCENTAGE]#, Constants.OPERATION_COMBINED] ## revision
+    #operationsIgnore = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
+    #              Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
+    #              Constants.OPERATION_SUM, Constants.OPERATION_AVG]
+    operationsIgnore = []
     comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
+    useCombined = False
     languageModel = Constants.LANGUAGE_MODEL_CHAT_GTP
     ## TODO: other params for the language model
-    sleepTime = None       # in secs, use 4 with free API, otherwise set it to None or to a small value
-    rateLimit = False     # set to true with free API, otherwise to False
+    sleepTime = 4       # in secs, use 4 with free API, otherwise set it to None or to a small value
+    rateLimit = True     # set to true with free API, otherwise to False
     model = None
-    generateOutput = False # won't generate GPT output and also requests
+    generateOutput = True # won't generate GPT output and also requests
     if languageModel == Constants.LANGUAGE_MODEL_CHAT_GTP:
         model = ChatGPTLanguageModel()
         model.rateLimit = rateLimit
         model.sleepTime = sleepTime
         model.enableGPT = True
     ## Input-Output
-    fileInput = Constants.CACHE_DIR + "generated_from_selected_070423_500tb_20pertb_newformat.json"
-    fileOutput = Constants.CACHE_DIR + "output_generated_from_selected_070423_500tb_20pertb_newformat.json"
-    isFeverous = True   ## use False if the input file is different from FEVEROUS inputs
-    tableToUse = 500
+    #fileInput = Constants.CACHE_DIR + "generated_from_selected_070423_500tb_20pertb_newformat.json"
+    fileInput = Constants.CACHE_DIR + "/revision/error_percentage/generated_from_selected_070723_errorpercent_75_500tb_20pertb_corrected.json"
+    fileOutput = Constants.CACHE_DIR + "/revision/error_percentage/output_generated_from_selected_070723_errorpercent_75_500tb_20pertb_corrected.json"
+    isFeverous = False   ## use False if the input file is different from FEVEROUS inputs
+    tableToUse = 200
     sentencesPerExample = 3
     evidencePerExample = None  ## int value or None
     f = open(fileInput)
@@ -251,14 +290,15 @@ if __name__ == '__main__':
         data = data[0: tableToUse]
     explored = []
     print("Exploring the data")
+    start_time = time.time()
     for example in tqdm(data):
     #for example in data:
-        original_claim = None
-        if isFeverous:
-            original_claim = example['original_claim']
-            #print("ORIG CLAIM: ", original_claim)
-        else:
-            original_claim = example['generated'][0]['original_claim_fev']
+        #original_claim = None
+        #if isFeverous:
+        #    original_claim = example['original_claim']
+        #    #print("ORIG CLAIM: ", original_claim)
+        #else:
+        #    original_claim = example['generated'][0]['original_claim_fev']
         originalTable = example['original_table']
         title = example['title']
         database = parseTables(originalTable, title, isFeverous)
@@ -269,59 +309,60 @@ if __name__ == '__main__':
             database.inferTypes()
         if not database.containsNonEmptyTables():
             ## mess tables we're going for lookup only
-            if isFeverous:
+            if isFeverous: ## REVISION: we want to avoid to generate lookups
                 generated_query = example['generated_query']
-                pgenerated, ngenerated = generateLookupOnly(generated_query, title)
-                populateExplored(explored, pgenerated, ngenerated, evidencePerExample)
+                pgenerated, ngenerated = generateLookupOnly(generated_query, title,isFeverous) ## REVISION
+                populateExplored(explored, pgenerated, ngenerated, evidencePerExample) ## REVISION
                 generated_random = example['generated_random']
-                pgenerated_random, ngenerated_random = generateLookupOnly(generated_random, title)
-                populateExplored(explored, pgenerated_random, ngenerated_random, evidencePerExample)
+                pgenerated_random, ngenerated_random = generateLookupOnly(generated_random, title, isFeverous) ## REVISION
+                populateExplored(explored, pgenerated_random, ngenerated_random, evidencePerExample) ## REVISION
                 generated_coldrandom = example['generated_coldrandom']
-                pgenerated_coldrandom, ngenerated_coldrandom = generateLookupOnly(generated_coldrandom, title)
-                populateExplored(explored, pgenerated_coldrandom, ngenerated_coldrandom, evidencePerExample)
+                pgenerated_coldrandom, ngenerated_coldrandom = generateLookupOnly(generated_coldrandom, title, isFeverous) ## REVISION
+                populateExplored(explored, pgenerated_coldrandom, ngenerated_coldrandom, evidencePerExample) ## REVISION
             else:
                 generated_query = example['generated'][0]['generated']
-                pgenerated, ngenerated = generateLookupOnly(generated_query, title)
-                populateExplored(explored, pgenerated, ngenerated, evidencePerExample)
+                pgenerated, ngenerated = generateLookupOnly(generated_query, title) ## REVISION
+                populateExplored(explored, pgenerated, ngenerated, evidencePerExample) ## REVISION
         else:
             if isFeverous:
                 #print("*** DATABASE:", database)
                 generated_query = example['generated_query']
                 #print("** Generated-query")
-                pgenerated, ngenerated = exploreTextForStrategy(generated_query, database, title, operations, comparisons,isFeverous)
-                populateExplored(explored, pgenerated, ngenerated, evidencePerExample)
-                #generateTextForStrategy(generated_query, database, explored)
-                generated_random = example['generated_random']
-                #print("** Generated-random")
-                pgenerated_random, ngenerated_random = exploreTextForStrategy(generated_random, database, title, operations, comparisons,isFeverous)
-                populateExplored(explored, pgenerated_random, ngenerated_random, evidencePerExample)
-                #generateTextForStrategy(generated_random, database, explored)
-                generated_coldrandom = example['generated_coldrandom']
+                #pgenerated, ngenerated = exploreTextForStrategy(generated_query, database, title, operations, comparisons, isFeverous, useCombined ,operationsToIgnore=operationsIgnore)
+                #populateExplored(explored, pgenerated, ngenerated, evidencePerExample)
+                generated_random = example['generated_random'] ## REVISION
+                #print("** Generated-random") ## REVISION
+                pgenerated_random, ngenerated_random = exploreTextForStrategy(generated_random, database, title, operations, comparisons, isFeverous, useCombined, operationsToIgnore=operationsIgnore) ## REVISION
+                populateExplored(explored, pgenerated_random, ngenerated_random, evidencePerExample) ## REVISION
+                generated_coldrandom = example['generated_coldrandom'] ## REVISION
                 #print("** Generated-coldrandom")
-                pgenerated_coldrandom, ngenerated_coldrandom = exploreTextForStrategy(generated_coldrandom, database, title, operations, comparisons, isFeverous)
-                populateExplored(explored, pgenerated_coldrandom, ngenerated_coldrandom, evidencePerExample)
-                #generateTextForStrategy(generated_coldrandom, database, explored)
+                #pgenerated_coldrandom, ngenerated_coldrandom = exploreTextForStrategy(generated_coldrandom, database, title, operations, comparisons, isFeverous, useCombined, operationsToIgnore=operationsIgnore) ## REVISION
+                #populateExplored(explored, pgenerated_coldrandom, ngenerated_coldrandom, evidencePerExample) ## REVISION
             else:
                 # print("*** DATABASE:", database)
-                generated_query = example['generated'][0]['generated']
+                #generated_query = example['generated'][0]['generated']
+                generated_query = example['generated'] ## REVISION % ERRORS
                 # print("** Generated-query")
-                pgenerated, ngenerated = exploreTextForStrategy(generated_query, database, title, operations, comparisons, isFeverous)
+                pgenerated, ngenerated = exploreTextForStrategy(generated_query, database, title, operations, comparisons, isFeverous, useCombined, operationsToIgnore=operationsIgnore)
                 populateExplored(explored, pgenerated, ngenerated, evidencePerExample)
-                # generateTextForStrategy(generated_query, database, explored)
-
+    end_time = time.time()
+    print("S-Queries exploration (sec)", (end_time-start_time))
+    start_time = time.time()
     filtered = filterExplored(explored, sentencesPerExample, model)
+    end_time = time.time()
+    print("Filter s-queries (sec)", (end_time - start_time))
     print("Filtered:", len(filtered))
-    #for filter in filtered:
-    #    task, prompt, gen, positive, op, database = filter
-    #    print(task, op)
+    for filter in filtered:
+        task, prompt, gen, positive, op, database = filter
+        #print(task)
     if generateOutput:
         generateOutputFromExplored(filtered, model)
-
         jsonString = json.dumps(data, indent=4)
         with io.open(fileOutput, 'w') as f:
             f.write(jsonString)
         print("Used ChatGPT-Tokens:", model.usedTokens)
-        print("Estimated price:", model.price)
+        print("Estimated price ($):", model.getPrice())
+        print("ChatGPT-Time Generation (sec):", model.timeElapsed)
 
 
 

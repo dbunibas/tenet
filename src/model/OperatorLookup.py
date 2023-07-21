@@ -1,3 +1,4 @@
+from src import Constants
 from src.model.IOperator import IOperator
 
 
@@ -16,5 +17,11 @@ class OperatorLookup(IOperator):
         if attributes != None: headerNames = attributes
         return "read(" + ",".join(headerNames)+")[*]"
 
+    def getScore(self):
+        return 0.0
+
     def __repr__(self):
        return "Lookup"
+
+    def getTenetName(self):
+        return Constants.OPERATION_LOOKUP

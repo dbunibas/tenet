@@ -65,7 +65,9 @@ class TestFinder(unittest.TestCase):
         self.database.addTable(table3)
         self.database.addTable(table4)
         self.database.inferTypes()
-        self.operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER, Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_AVG, Constants.OPERATION_COUNT, Constants.OPERATION_SUM]
+        self.operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
+                           Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_AVG, Constants.OPERATION_COUNT,
+                           Constants.OPERATION_SUM, Constants.OPERATION_RANKED, Constants.OPERATION_PERCENTAGE]
         self.comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
 
     def test_finder_evidence_table1(self):
@@ -84,6 +86,10 @@ class TestFinder(unittest.TestCase):
         finder.exploreAll()
         for operator in finder.allowedOperations:
             print(operator.printOperator(evidence1, self.database))
+        finder = OperatorFinder(evidence1, self.database, self.operations, self.comparisons)
+        finder.exploreAll(composedOperations=True)
+        for operator in finder.allowedOperations:
+            print(operator.printOperator(evidence1, self.database))
 
     def test_finder_evidence_table2(self):
         # Persons #
@@ -99,6 +105,11 @@ class TestFinder(unittest.TestCase):
         evidence1.inferTypesFromDB(self.database)
         finder = OperatorFinder(evidence1, self.database, self.operations, self.comparisons)
         finder.exploreAll()
+        for operator in finder.allowedOperations:
+            print(operator.printOperator(evidence1, self.database))
+        print("#"*30)
+        finder = OperatorFinder(evidence1, self.database, self.operations, self.comparisons)
+        finder.exploreAll(composedOperations=True)
         for operator in finder.allowedOperations:
             print(operator.printOperator(evidence1, self.database))
 
@@ -148,5 +159,40 @@ class TestFinder(unittest.TestCase):
         #     for sentence in sentences:
         #         print(sentence)
         #     print("************************")
+
+    def test_finder_with_rank(self):
+        # Name | Age | Loc
+        # Mike | 47 | SF
+        # Anne | 22 | NY
+        # John | 12 | NY
+        # Paul | 8 | NY
+        evidence1 = Evidence("Persons")
+        evidence1.addRow([Cell(47, Header("Age"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(22, Header("Age"), [1, 1])])
+        evidence1.addRow([Cell(12, Header("Age"), [2, 1])])
+        evidence1.addRow([Cell(8, Header("Age"), [3, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        finder = OperatorFinder(evidence1, self.database, self.operations, self.comparisons)
+        finder.exploreAll()
+        for operator in finder.allowedOperations:
+            print(operator.printOperator(evidence1, self.database))
+
+    def test_finder_with_rank(self):
+        # Name | Age | Loc
+        # Mike | 47 | SF
+        # Anne | 22 | NY
+        # John | 12 | NY
+        # Paul | 8 | NY
+        evidence1 = Evidence("Persons")
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(22, Header("Age"), [1, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [0, 0]), Cell(47, Header("Age"), [0, 1])])
+        evidence1.addRow([Cell("John", Header("Name"), [2, 0]), Cell(12, Header("Age"), [2, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        finder = OperatorFinder(evidence1, self.database, self.operations, self.comparisons)
+        finder.exploreAll()
+        for operator in finder.allowedOperations:
+            print(operator.printOperator(evidence1, self.database))
 
 

@@ -1,4 +1,5 @@
 from src import Constants
+from src.LoggedDecorators import timed
 from src.model.ColdSearch import ColdSearch
 from src.model.OperatorAggregativeFunction import OperatorAggregativeFunction
 from src.model.OperatorComparison import OperatorComparison
@@ -6,11 +7,26 @@ from src.model.OperatorFilter import OperatorFilter
 from src.model.OperatorFinder import OperatorFinder
 from src.model.OperatorLookup import OperatorLookup
 from src.model.OperatorMinMax import OperatorMinMax
+from src.model.OperatorPercentage import OperatorPercentage
+from src.model.OperatorRanked import OperatorRanked
+from src.model.OperatorRankedSimple import OperatorRankedSimple
 from src.model.RefuteInstancesGenerator import RefuteInstancesGenerator
 from src.model.WarmSearch import WarmSearch
 from src.textGeneration.ChatGPTLanguageModel import ChatGPTLanguageModel
 
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
+
 import functools
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+# Misc logger setup so a debug log statement gets printed on stdout.
+logger.setLevel("DEBUG")
 
 
 class Tenet:
@@ -26,10 +42,12 @@ class Tenet:
         self.warmSearch.setSeed(seed)
         ## TEXT GENERATION
         self.model = None
-        self.operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
-                      Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
-                      Constants.OPERATION_SUM, Constants.OPERATION_AVG]
-        self.comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
+        self.operations = operations
+        #self.operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
+        #              Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
+        #              Constants.OPERATION_SUM, Constants.OPERATION_AVG, Constants.OPERATION_RANKED, Constants.OPERATION_PERCENTAGE]
+        #self.comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
+        self.comparisons = comparisons
         self.languageModel = Constants.LANGUAGE_MODEL_CHAT_GTP
         self.initLanguageModel(rateLimit, sleepTime)
         self.bestEvidences = bestEvidences
@@ -38,8 +56,9 @@ class Tenet:
         self.refutesInstancesGenerator = RefuteInstancesGenerator()
         if seed is not None:
             self.refutesInstancesGenerator.setSeed(seed)
+        self.statistics = None
 
-
+    #@timed
     def initLanguageModel(self, rateLimit, sleepTime):
         if self.languageModel == Constants.LANGUAGE_MODEL_CHAT_GTP:
             self.model = ChatGPTLanguageModel()
@@ -47,36 +66,74 @@ class Tenet:
             self.model.sleepTime = sleepTime
             self.model.enableGPT = True
 
+    def disableLanguageModel(self):
+        self.model.enableGPT = False
+
+    #@timed
     def generatePositiveExamples(self, tableName, evidenceSel, numEvidence):
         table = self.database.getTableByName(tableName)
-        return self.generateExamples(table, evidenceSel, numEvidence)
+        start = time.time()
+        examples = self.generateExamples(table, evidenceSel, numEvidence, True)
+        end = time.time()
+        if self.statistics is not None: self.statistics.data[Constants.STATISTICS_TOTAL_TIME_POSITIVE] += (end - start)
+        return examples
 
-    def generateNegativeExamples(self, tableName, evidenceSel, numEvidence, addRows, rowsToAdd, removeRows, rowsToRemove, strategy, useLM=False):
+    #@timed
+    def generateNegativeExamples(self, tableName, evidenceSel, numEvidence, addRows, rowsToAdd, removeRows, rowsToRemove, strategy, useLM=False, instanceRefute=None):
         table = self.database.getTableByName(tableName)
         if useLM: self.refutesInstancesGenerator.useLM()
-        refuteInstances = self.refutesInstancesGenerator.generateInstanceForRefute(table, addRows, rowsToAdd, removeRows, rowsToRemove, strategy)
-        examples = self.generateExamples(refuteInstances, evidenceSel, numEvidence)
+        start = time.time()
+        #print("*** Generate Negative Instance")
+        refuteInstances = None
+        if instanceRefute is not None:
+            refuteInstances = instanceRefute
+        else:
+            if len(table.rows) > 1:
+                refuteInstances = self.refutesInstancesGenerator.generateInstanceForRefuteBigTables(table, addRows, rowsToAdd, removeRows, rowsToRemove, strategy, evidenceSel)
+            else:
+                refuteInstances = self.refutesInstancesGenerator.generateInstanceForRefute(table, addRows, rowsToAdd, removeRows, rowsToRemove, strategy, evidenceSel)
+        end1 = time.time()
+        if self.statistics is not None: self.statistics.data[Constants.STATISTICS_TOTAL_NEGATIVE_INSTANCES] += (end1 - start)
+
+        examples = self.generateExamples(refuteInstances, evidenceSel, numEvidence, False)
+        end2 = time.time()
+        if self.statistics is not None: self.statistics.data[Constants.STATISTICS_TOTAL_TIME_NEGATIVE] += (end2 - start)
         ## Change the refuteInstances with the original one
         for ex in examples:
             ex["table"] = table
+        #print("*** Neg Examples:", len(examples))
         return examples
 
-    def generateExamples(self, table, evidenceSel, numEvidence):
+    #@timed
+    #@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(10))
+    def generateExamples(self, table, evidenceSel, numEvidence, isPositive):
         ## New Evidence Discovery
         evidences = []
+        start = time.time()
         if evidenceSel is None:
             evidences = self.coldSearch.findEvidences(table, numEvidence, evidenceSel)
         else:
             evidences = self.warmSearch.findEvidences(table, numEvidence, evidenceSel)
-        print("*** New Evidences Generated: ", len(evidences))
+        end = time.time()
+        if self.statistics is not None:
+            self.statistics.data[Constants.STATISTICS_EVIDENCE_GENERATION] += (end - start)
+            if isPositive:
+                self.statistics.data[Constants.STATISTICS_EVIDENCE_GENERATION_POSITIVE] += (end - start)
+            else:
+                self.statistics.data[Constants.STATISTICS_EVIDENCE_GENERATION_NEGATIVE] += (end - start)
+        #print("*** New Evidences Generated: ", len(evidences))
         ## Semantic Discovery
+        start = time.time()
         positives = []
         for evidence in evidences:
             ## check if the evidence is the same as evidenceSel
             finder = OperatorFinder(evidence, self.database, self.operations, self.comparisons)
+            finder.setStatistics(self.statistics)
             finder.exploreAll()
             t = (evidence, finder.allowedOperations)
             positives.append(t)
+            #print("Explored with finder")
+        #print("Explored all the generated evidences...rank them")
         ## Rank the best top "evidences" with more different semantics
         positives = sorted(positives, key=functools.cmp_to_key(self.importance), reverse=True)
         positiveForText = []
@@ -86,6 +143,13 @@ class Tenet:
             for p in positives[0:self.bestEvidences]:
                 positiveForText.append(p)
         ## Text Generation with a PLM
+        end = time.time()
+        if self.statistics is not None:
+            self.statistics.data[Constants.STATISTICS_S_QUERIES_DISCOVERY] += (end - start)
+            if isPositive:
+                self.statistics.data[Constants.STATISTICS_S_QUERIES_DISCOVERY_POSITIVE] += (end - start)
+            else:
+                self.statistics.data[Constants.STATISTICS_S_QUERIES_DISCOVERY_NEGATIVE] += (end - start)
         examples = []
         for t in positiveForText:
             evidence = t[0]
@@ -105,9 +169,13 @@ class Tenet:
                 task = op.printOperator(evidence, self.database)
                 prompt = self.model.generatePrompt(evidence, task)
                 try:
+                    if self.statistics is not None: self.model.setStatistics(self.statistics)
                     sentences = self.model.generateText(prompt)
+                    evidenceForExample = evidence
+                    if not isPositive and evidenceSel is not None: ## WARM, we are using the provided evidence
+                            evidenceForExample = evidenceSel
                     example = {
-                        "evidence": evidence,
+                        "evidence": evidenceForExample,
                         "sentences": sentences,
                         "table": table,
                         "prompt": prompt,
@@ -116,7 +184,10 @@ class Tenet:
                     examples.append(example)
                 except Exception as e:
                     print("Error with the API: ", e)
-                    pass ## NetworkIssues (we can log such errors or return errors)
+                    print("Sleep for 10")
+                    time.sleep(10)
+                    #raise Exception(e) ## for exponential backoff
+                    #pass ## NetworkIssues (we can log such errors or return errors)
         return examples
 
 
@@ -138,16 +209,19 @@ class Tenet:
         return False
 
     def rarityScore(self, l):
+        if self.containsInstance(l, [OperatorRanked.__name__]): return 11
         if self.containsInstance(l, [OperatorMinMax.__name__]): return 10
         if self.containsInstance(l, [OperatorAggregativeFunction.__name__]):
             if self.containsAggregativeWithfilter(l, Constants.OPERATION_AVG): return 9
-            if self.containsAggregativeWithfilter(l, Constants.OPERATION_AVG): return 8
+            if self.containsAggregativeWithfilter(l, Constants.OPERATION_SUM): return 8
             if self.containsAggregativeWithfilter(l, Constants.OPERATION_COUNT): return 7
             if self.containsAggregativeOp(l, Constants.OPERATION_AVG): return 6
             if self.containsAggregativeOp(l, Constants.OPERATION_SUM): return 5
             return 4
+        if self.containsInstance(l, [OperatorPercentage.__name__]): return 2
         if self.containsInstance(l, [OperatorFilter.__name__]): return 1
         # if containsInstance(l, [OperatorMinMax.__name__, OperatorAggregativeFunction.__name__, OperatorFilter.__name__]): return 1
+        if self.containsInstance(l, [OperatorRankedSimple.__name__]): return 1.5
         if self.containsInstance(l, [OperatorComparison.__name__]): return 0
         return -1
 
@@ -158,6 +232,7 @@ class Tenet:
         # print("OP2: ", operations2)
         r1Score = self.rarityScore(operations1)
         r2Score = self.rarityScore(operations2)
+        ## TODO: use op.getScore():
         # print("R1 Score: ", r1Score, " R2 Score", r2Score)
         if r1Score == r2Score:
             len1 = len(operations1)
@@ -172,3 +247,6 @@ class Tenet:
         s2 = self.rarityScore([op2])
         return s1 - s2
 
+    def setStatistics(self, statisticsObs):
+        ## to debug time
+        self.statistics = statisticsObs

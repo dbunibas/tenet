@@ -3,6 +3,9 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from src import Constants
 
 ## UTILS METHODS
+from src.LoggedDecorators import timed
+
+
 def convertValue(value):
     if isinstance(value, int):
         try:
@@ -50,12 +53,7 @@ class Header:
             return self.name + "("+self.type+")"
 
 class Cell:
-    def __init__(self, value, header):
-        self.header = header
-        self.value = value
-        self.pos = []
-
-    def __int__(self, value, header, pos):
+    def __init__(self, value, header, pos=[]):
         self.header = header
         self.value = value
         self.pos = pos
@@ -91,6 +89,8 @@ class Evidence:
         self.headers = []
         self.tableName = tableName
         self.key = None
+        self.headerPos = dict()
+
 
     def setKey(self, attributeName):
         self.key = attributeName
@@ -109,8 +109,13 @@ class Evidence:
         return None
 
     def getHeaderByName(self, headerName):
-        for header in self.headers:
-            if header.name == headerName: return header
+        if len(self.headerPos) > 0:
+           if headerName in self.headerPos:
+               pos = self.headerPos[headerName]
+               return self.headers[pos]
+        else:
+            for header in self.headers:
+                if header.name == headerName: return header
         return None
 
     def rowNumber(self):
@@ -133,6 +138,9 @@ class Evidence:
             for cell in row:
                 if cell.header not in self.headers:
                     self.headers.append(cell.header)
+        for i in range(0, len(self.headers)):
+            header = self.headers[i]
+            self.headerPos[header.name] = i
         for row in self.rows:
             orderedRow = {}
             for header in self.headers:
@@ -185,11 +193,23 @@ class Evidence:
             toReturn += "\n"
         return toReturn
 
-    def toList(self):
-        tableList = []
+    def toListHeaders(self):
         headerList = []
         for header in self.headers:
             headerList.append(str(header.name))
+        return headerList
+
+    def toListCells(self):
+        cellList = []
+        for row in self.rows:
+            for cell in row:
+                if cell is not None: cellList.append(str(cell.value))
+        return cellList
+
+
+    def toList(self):
+        tableList = []
+        headerList = self.toListHeaders()
         tableList.append(headerList)
         for row in self.rows:
             rowList = []
@@ -224,12 +244,40 @@ class Evidence:
         if splitTokens: return listReturn
         return dictReturn
 
+    def getCellsForAttribute(self, attrName):
+        cells = []
+        for orderedRow in self.orderedRows:
+            cell = orderedRow[attrName]
+            if cell is not None:  ## skip none value
+                cells.append(cell)
+        return cells
+
+    def getCellByRowAndAttr(self, row, attrName):
+        return self.orderedRows[row][attrName]
+
+    def getNumberOfCells(self):
+        counter = 0
+        for row in self.rows:
+            for cell in row:
+                if cell is not None and len(str(cell.value).strip())>0:
+                    counter += 1
+        return counter
+
 class Table:
     def __init__(self, tableName, schema):
         self.tableName = tableName
         self.schema = schema
         self.rows = []
         self.orderedRows = []
+        self.headerPos = dict()
+        for i in range(0, len(self.schema)):
+            header = self.schema[i]
+            self.headerPos[header.name] = i
+        ### for optimization
+        self.lastRowsToDict = -1
+        self.mapToDict = None
+        self.rowStrings = None
+
 
     def addRow(self, row):
         self.rows.append(row)
@@ -239,17 +287,23 @@ class Table:
             orderedRow[header.name] = cell
         self.orderedRows.append(orderedRow)
 
+    #@timed
     def toDict(self):
-        map = {}
-        for header in self.schema:
-            map[header.name] = []
-        for row in self.orderedRows:
-            for key, cell in row.items():
-                listOfValues = map[key]
-                value = convertValue(cell.value)
-                cell.value = value
-                listOfValues.append(value)
-        return map
+        if self.lastRowsToDict != len(self.rows):
+            map = {}
+            for header in self.schema:
+                map[header.name] = []
+            for row in self.orderedRows:
+                for key, cell in row.items():
+                    listOfValues = map[key]
+                    value = convertValue(cell.value)
+                    cell.value = value
+                    listOfValues.append(value)
+            self.lastRowsToDict = len(self.rows)
+            self.mapToDict = map
+            return map
+        else:
+            return self.mapToDict
 
     def toDictWithRowNumber(self):
         map = {}
@@ -272,9 +326,14 @@ class Table:
                 attribute.setType(type)
 
     def getAttribute(self, attrName):
-        for attribute in self.schema:
-            if attribute.name == attrName:
-                return attribute
+        if len(self.headerPos) > 0:
+            if attrName in self.headerPos:
+                pos = self.headerPos[attrName]
+                return self.schema[pos]
+        else:
+            for attribute in self.schema:
+                if attribute.name == attrName:
+                    return attribute
         return None
 
     def initPosForCells(self):
@@ -292,10 +351,14 @@ class Table:
         return self.orderedRows[row][attrName]
 
     def getPosAttr(self, attrName):
-        posReturn = 0
-        for attribute in self.schema:
-            if attribute.name == attrName: return posReturn
-            posReturn += 1
+        if len(self.headerPos) > 0:
+            if attrName in self.headerPos:
+                return self.headerPos[attrName]
+        else:
+            posReturn = 0
+            for attribute in self.schema:
+                if attribute.name == attrName: return posReturn
+                posReturn += 1
         return -1
 
     def getCellsByHeader(self, header):
@@ -318,9 +381,14 @@ class Table:
         orderedRowModify[header.name] = cell
 
     def _findCellByHeader(self, header, row):
-        for cell in row:
-            if cell.header == header:
-                return cell
+        if len(self.headerPos) > 0:
+            if header.name in self.headerPos:
+                pos = self.headerPos[header.name]
+                return row[pos]
+        else:
+            for cell in row:
+                if cell.header == header:
+                    return cell
         return None
 
     def getValueForAggregate(self, column, operation):
@@ -349,7 +417,40 @@ class Table:
     def removeRow(self, rowIndex, init=True):
         del self.rows[rowIndex]
         del self.orderedRows[rowIndex]
+        if self.rowStrings is not None and len(self.rowStrings) > 0: del self.rowStrings[rowIndex]
         if init: self.initPosForCells()
+
+    #@timed
+    def buildOptForRemove(self):
+        self.rowStrings = []
+        for row in self.rows:
+            self.rowStrings.append(self.rowToString(row))
+
+    #@timed
+    def removeRowObj(self, rowToDelete, init=True):
+        index = -1
+        rowStringDelete = self.rowToString(rowToDelete)
+        if self.rowStrings is not None and len(self.rowStrings) > 0:
+            for i in range(0, len(self.rowStrings)):
+                if rowStringDelete == self.rowStrings[i]:
+                    index = i
+                    break
+        else:
+            for i in range(0, len(self.rows)):
+                row = self.rows[i]
+                if rowStringDelete == self.rowToString(row):
+                    index = i
+                    break
+        if index != -1:
+            self.removeRow(index, init)
+
+    #@timed
+    def rowsToStringSet(self):
+        rowsString = set()
+        for row in self.rows:
+            toReturn = self.rowToString(row)
+            rowsString.add(toReturn)
+        return rowsString
 
     def rowsToString(self):
         rowsString = []
@@ -358,6 +459,7 @@ class Table:
             rowsString.append(toReturn)
         return rowsString
 
+    #@timed
     def rowToString(self, row):
         toReturn = ""
         for header in self.schema:

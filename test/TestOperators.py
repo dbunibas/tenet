@@ -1,11 +1,14 @@
 import unittest
 
 from src import Constants
+from src.model.OperatorRankedSimple import OperatorRankedSimple
 from src.model.OperatorAggregativeFunction import OperatorAggregativeFunction
 from src.model.OperatorComparison import OperatorComparison
 from src.model.OperatorFilter import OperatorFilter
 from src.model.OperatorLookup import OperatorLookup
 from src.model.OperatorMinMax import OperatorMinMax
+from src.model.OperatorPercentage import OperatorPercentage
+from src.model.OperatorRanked import OperatorRanked
 from src.model.RelationalTable import Header, Table, Cell, Database, Evidence
 
 
@@ -55,10 +58,9 @@ class TestOperator(unittest.TestCase):
         evidence1.inferTypesFromDB(self.database)
         operator = OperatorLookup()
         check = operator.checkSemantic(evidence1, self.database)
-        print("Check Lookup:", check)
+        #print("Check Lookup:", check)
         self.assertTrue(check, "Evidence 1")
-        if check:
-            print("Operation:", operator.printOperator(evidence1, self.database))
+        #if check: print("Operation:", operator.printOperator(evidence1, self.database))
         evidence2 = Evidence("Persons")
         for i in range(0, 10):
             evidence2.addRow([Cell("Mike", Header("Name")), Cell(47, Header("Age"))])
@@ -67,7 +69,7 @@ class TestOperator(unittest.TestCase):
         evidence2.build()
         evidence2.inferTypesFromDB(self.database)
         check = operator.checkSemantic(evidence2, self.database)
-        print("Check Lookup:", check)
+        #print("Check Lookup:", check)
         self.assertFalse(check, "Evidence 2")
 
     def test_comparisons(self):
@@ -87,8 +89,8 @@ class TestOperator(unittest.TestCase):
         self.assertTrue(operatorAgeGT.checkSemantic(evidence1, self.database), "Age can be compared with >")
         self.assertTrue(operatorAgeLT.checkSemantic(evidence1, self.database), "Age can be compared with <")
         self.assertFalse(operatorAgeSame.checkSemantic(evidence1, self.database), "Age cannot be compared with =")
-        print(operatorAgeGT.printOperator(evidence1, self.database))
-        print(operatorAgeLT.printOperator(evidence1, self.database))
+        #print(operatorAgeGT.printOperator(evidence1, self.database))
+        #print(operatorAgeLT.printOperator(evidence1, self.database))
 
         evidence2 = Evidence("Persons")
         evidence2.addRow([Cell("Paul", Header("Name")), Cell(8, Header("Age")), Cell("NY", Header("Loc"))])
@@ -99,8 +101,8 @@ class TestOperator(unittest.TestCase):
         self.assertTrue(operatorAgeGT.checkSemantic(evidence2, self.database), "Age can be compared with >")
         self.assertTrue(operatorAgeLT.checkSemantic(evidence2, self.database), "Age can be compared with <")
         operatorLocSame = OperatorComparison("Loc", Constants.OPERATOR_SAME)
-        self.assertTrue(operatorLocSame.checkSemantic(evidence2, self.database), "Loc can be comparedi with = ")
-        print(operatorLocSame.printOperator(evidence2, self.database))
+        self.assertTrue(operatorLocSame.checkSemantic(evidence2, self.database), "Loc can be compared with = ")
+        #print(operatorLocSame.printOperator(evidence2, self.database))
 
     def test_filter(self):
         evidence1 = Evidence("Persons")
@@ -159,7 +161,6 @@ class TestOperator(unittest.TestCase):
         self.assertTrue(operatorAgeLower.value == 22, "The value for the filter is 22")
         operatorAgeGreater = OperatorFilter("Age", Constants.OPERATOR_GT)
         self.assertFalse(operatorAgeGreater.checkSemantic(evidence5, self.database), "It is not a filter since we selected all the people with age < 22 and not with age greater than something")
-
 
     def test_minMax(self):
         evidence1 = Evidence("Persons")
@@ -262,7 +263,7 @@ class TestOperator(unittest.TestCase):
         self.assertTrue(operatorCountH2.operatorFilter.value == 7, "the filter value is 7")
         self.assertTrue(operatorCountH2.value == 3, "the count is 3")
 
-    def test_aggregativeFunction(self):
+    def test_aggregativeFunction2(self):
         headerCause = Header("Cause of Death")
         header19th = Header("19 th")
         header21st = Header("21 st")
@@ -285,10 +286,187 @@ class TestOperator(unittest.TestCase):
         operatorAggregative = OperatorAggregativeFunction("21 st", Constants.OPERATION_AVG)
         operatorAggregative.setFilter("19 th", Constants.OPERATOR_LT)
         check = operatorAggregative.checkSemantic(evidence1, database)
-        print(check)
-        if check:
-            print(operatorAggregative.printOperator(evidence1, database))
+        self.assertFalse(check, "cannot apply a filter since the values in 19th are all  different")
+        if check: print(operatorAggregative.printOperator(evidence1, database))
 
+    def test_rankedFunction(self):
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 9, "Selected value is 9")
+        self.assertTrue(operatorRanked.orderType == "desc", "It is close to the right side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 2, "It is the 2nd in the order from the right side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Mike", Header("Name"), [0, 0]), Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 10, "Selected value is 10")
+        self.assertTrue(operatorRanked.orderType == "desc", "It is close to the right side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 1, "It is the 1st in the order from the right side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell("Paul", Header("Name"), [4, 0]), Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 4, "Selected value is 4")
+        self.assertTrue(operatorRanked.orderType == "asc", "It is close to the left side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 1, "It is the 1st in the order from the left side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [3, 0]), Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 8, "Selected value is 8")
+        self.assertTrue(operatorRanked.orderType == "asc", "It is close to the left side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 2, "It is the 1st in the order from the left side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [3, 0]), Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Ranked Function cannot be applied due two names selected")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRanked("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Ranked Function cannot be applied due Score column not selected completely")
+
+    def test_rankedFunctionSimple(self):
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [0, 0]), Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Albert", Header("Name"), [2, 0]), Cell(8, Header("Score"), [2, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRankedSimple("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 9, "Selected value is 9")
+        self.assertTrue(operatorRanked.orderType == "desc", "It is close to the right side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 2, "It is the 2nd in the order from the right side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Mike", Header("Name"), [0, 0]), Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRankedSimple("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 10, "Selected value is 10")
+        self.assertTrue(operatorRanked.orderType == "desc", "It is close to the right side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 1, "It is the 1st in the order from the right side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Paul", Header("Name"), [4, 0]), Cell(4, Header("Score"), [4, 1])])
+        evidence1.addRow([Cell("Albert", Header("Name"), [2, 0]), Cell(8, Header("Score"), [2, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRankedSimple("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 4, "Selected value is 4")
+        self.assertTrue(operatorRanked.orderType == "asc", "It is close to the left side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 1, "It is the 1st in the order from the left side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Mike", Header("Name"), [3, 0]), Cell(8, Header("Score"), [3, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRankedSimple("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Ranked Function can be applied")
+        self.assertTrue(operatorRanked.value == 8, "Selected value is 8")
+        self.assertTrue(operatorRanked.orderType == "asc", "It is close to the left side (ordered asc)")
+        self.assertTrue(operatorRanked.pos == 2, "It is the 1st in the order from the left side")
+
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell(10, Header("Score"), [0, 1])])
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell(8, Header("Score"), [2, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [3, 0]), Cell(8, Header("Score"), [3, 1])])
+        evidence1.addRow([Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorRanked = OperatorRankedSimple("Score", "Name")
+        check = operatorRanked.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Ranked Function cannot be applied due two names selected")
+
+    def test_percentageFunction(self):
+        # Name | Score | Exam
+        # Mike | 10 | PP
+        # Anne | 9 | PP
+        # Albert | 8 | PP
+        # Mike | 8 | A1
+        # Paul | 4 | A2
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell("Paul", Header("Name"), [4, 0]), Cell(4, Header("Score"), [4, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorPercentage = OperatorPercentage("Score")
+        check = operatorPercentage.checkSemantic(evidence1, self.database)
+        self.assertTrue(check, "Percentage Function ca be applied")
+        operatorPercentage = OperatorPercentage("Name")
+        check = operatorPercentage.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Percentage Function cannot be applied with Name")
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.addRow([Cell("Paul", Header("Name"), [4, 0]), Cell(4, Header("Score"), [4, 1])])
+        evidence1.addRow([Cell("Mike", Header("Name"), [3, 0]), Cell(8, Header("Score"), [3, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorPercentage = OperatorPercentage("Score")
+        check = operatorPercentage.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Percentage Function cannot be applied with more than 2 rows")
+        evidence1 = Evidence("University Career")
+        evidence1.addRow([Cell("Anne", Header("Name"), [1, 0]), Cell(9, Header("Score"), [1, 1])])
+        evidence1.build()
+        evidence1.inferTypesFromDB(self.database)
+        operatorPercentage = OperatorPercentage("Score")
+        check = operatorPercentage.checkSemantic(evidence1, self.database)
+        self.assertFalse(check, "Percentage Function cannot be applied with 1 row")
 
 
 

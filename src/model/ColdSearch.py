@@ -1,3 +1,4 @@
+from src.LoggedDecorators import timed
 from src.model.ISearchStrategy import ISearchStrategy
 import random
 import collections
@@ -20,6 +21,7 @@ class ColdSearch(ISearchStrategy):
     def setMaxCellsToPick(self, maxCellsToPick):
         self.maxCellsToPick = maxCellsToPick
 
+    #@timed
     def findEvidences(self, table, numExamples, evidence=None):
         evidences = []
         counterWhile = 0

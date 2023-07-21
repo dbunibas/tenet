@@ -52,7 +52,7 @@ class TestGenerateRefuteInstance(unittest.TestCase):
         generator = RefuteInstancesGenerator()
         table = self.database.getTableByName("Persons")
         print(table)
-        added = generator.addTuple(table, 2, Constants.STRATEGY_ACTIVE_DOMAIN, Constants.STATEGY_CHANGE_MAX)
+        added = generator.addTuple(table, 2, Constants.STRATEGY_ACTIVE_DOMAIN, Constants.STRATEGY_CHANGE_MAX)
         print(added)
 
     def test_generateRefuteInstanceWithAdd(self):
