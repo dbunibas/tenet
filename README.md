@@ -2,7 +2,7 @@
 TExtual traiNing Examples from daTa
 
 # News
-- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://www.eurecom.fr/~papotti/files/Pythia_ICDE_2023.pdf) Accepted to SIGMOD 2024 
+- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_SIGMOD.pdf) Accepted to SIGMOD 2024 
 
 # Execution
 
