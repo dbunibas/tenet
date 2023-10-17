@@ -2,7 +2,7 @@
 TExtual traiNing Examples from daTa
 
 # News
-- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_SIGMOD.pdf) Accepted to SIGMOD 2024 
+- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_CR_SIGMOD_2024.pdf) Accepted to SIGMOD 2024 
 
 # Execution
 
@@ -23,7 +23,11 @@ To train and test target applications unzip the file and follow the readme per e
 # Citation
 @article{TenetSigmod,
   author = {Jean-Flavien, Bussotti and Enzo, Veltri and Donatello, Santoro and Paolo, Papotti},
-  journal = {Proceedings of the ACM on Management of Data},
   title = {{Generation of Training Examples for Tabular Natural Language Inference}},
-  year = {2024}
+  publisher = {Association for Computing Machinery},
+  journal = {Proc. ACM Manag. Data},
+  year = {2023},
+  doi = {10.1145/3626730},
 }
+
+
