@@ -26,6 +26,18 @@ To ease the execution we use [Docker](https://www.docker.com/get-started/) and [
      ```
 4. Open the application at http://localhost:4200/. The current username is admin and password tenet! you could change it by connecting to the Mongo DB instance deployed with docker.
 
+# Configuration
+The configuration can be done through the config.json file. It consists of three main sections:
+1. Negative Table Generation contains the different strategies to use to generate negative evidence through an error injection process.
+  - addRows (removeRows) = 'True' or 'False' if new rows should be added (rows to be removed) to generate the negative table
+  - rowsToAdd (rowsToRemoce) = the number of new rows to add (remove)
+  - strategy = "ActiveDomain" or "LMGenerator". With ActiveDomain values for new rows are extracted from the ActiveDomain, instead by using "LMGenerator" it uses a PLM to generate the values.
+2. Sentence Generation contains the allowed semantic-queries to use and that could be discovered through the searching process, and also the comparison operator to use. Available values for operations are: "lookup", "comparison", "filter", "min", "max", "count", "sum", "avg", "grouping", "ranked", "percentage", "combined". While values for comparison are "<", ">", "=".
+3. Text generation Language Model configuration.
+  - "api_key" should contains your ChatGPT API key or your TogetherAI API key
+  - "languageModel" specifies the LM to use to generate the sentences. Values are: "ChatGPT", "MistralOllama" or "MistralTogetherAi". In the case of MistralOllama the api_key is not required but the model should be executed by using [Ollama](https://ollama.com/)
+  - "address" allows to set up the address of the Ollama server
+
 
 # Engine Only Execution
 
