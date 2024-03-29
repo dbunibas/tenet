@@ -1,0 +1,24 @@
+<nav *ngIf="user" class="navbar navbar-expand navbar-dark bg-primary mb-3 sticky-top">
+  <div class="container">
+    <a href="https://portale.unibas.it/site/home.html" target="_blank">
+      <img src="/assets/img/logo-uni.webp" alt="logo Univerità degli studi della Basilicata"
+           class="align-text-top navbar-brand logo"/>
+    </a>
+    <h1 class="navbar-brand mb-0 h1">{{title}}</h1>
+    <ul class="navbar-nav">
+      <span class="navbar-text me-3">{{user.username}}</span>
+      <li class="nav-item">
+        <a class="nav-link active" routerLink="/new">New Project</a>
+      </li>
+      <li *ngIf="activeProject" class="nav-item">
+        <a class="nav-link active" routerLink="/project">Current Project</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" routerLink="/exports">Exports</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" routerLink="/login">Logout</a>
+      </li>
+    </ul>
+  </div>
+</nav>

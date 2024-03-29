@@ -1,0 +1,11 @@
+.snackbar {
+  z-index: 1000;
+  position: fixed;
+  right: 50vw;
+  bottom: 1.5rem;
+  padding: 0.7rem 2rem;
+  color: white;
+  transform: translateX(50%) translateY(-30%);
+  border-radius: 4px;
+  box-shadow: 5px 5px rgba(208, 208, 208, 0.283);
+}

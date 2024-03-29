@@ -1,0 +1,57 @@
+<div class="container">
+  <div class="row">
+    Select a column and type a filter string
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <select class="form-control form-select" [(ngModel)]="filterProperty">
+          <option value="ALL-PROPERTY">ALL</option>
+          <option *ngFor="let header of table.schema" value="{{header.name}}">{{ header.name }}</option>
+        </select>
+      </div>
+      <input [(ngModel)]="filterString" class="form-control" type="text" (keyup)="applyFilter()"
+             [disabled]="!filterProperty"/>
+    </div>
+  </div>
+
+
+  <mtx-grid class="dynamic-table" [data]="dataSource" #grid [columns]="columns" [columnResizable]="true"
+            [trackBy]="trackByName"
+            [sortOnFront]="true" sortActive="name" sortDirection="asc" [sortDisableClear]="true" [sortDisabled]="false"
+            sortStart="asc" [multiSelectable]="true" [multiSelectionWithClick]="true" [rowSelectable]="true"
+            [disableRowClickSelection]="true" [cellSelectable]="false" (rowSelectionChange)="updateRowSelection($event)"
+            [rowSelected]="selectedRows"
+            [showToolbar]="true" [toolbarTitle]="'Explore data'" [columnPinnable]="true"
+            [headerExtraTemplate]="headerTemplate"
+            [cellTemplate]="cellTemplate" (columnChange)="colOrderChange($event)" (sortChange)="sort($event)"
+            [noResultTemplate]="noResultTemplate">
+
+    <ng-template #headerTemplate let-col>
+      <input type="checkbox" class="mdc-checkbox__native-control"/>
+      <mat-checkbox [checked]="selectedColumns.includes(col.field)" (click)="toggleColumn(col)"></mat-checkbox>
+    </ng-template>
+    <ng-template #cellTemplate let-row let-col="colDef">
+      <div (click)="toggleCell(row[col.field])" style="cursor: pointer"
+           [ngClass]="row[col.field].selected ? 'selectionStyle' : ''">
+        {{ row[col.field].value }}
+      </div>
+    </ng-template>
+
+    <ng-template #noResultTemplate>
+      <p>No record match the applied filter</p>
+    </ng-template>
+
+  </mtx-grid>
+  <div class="row">
+    <div class="col-4"></div>
+    <div class="col-4">
+      <button (click)="sendEvidence()" style="width: 100%; padding: 10px; font-weight: 500;" class="btn btn-primary">SAVE EVIDENCE
+      </button>
+    </div>
+    <div class="col-4">
+      <button style="width: 100%; padding: 10px; font-weight: 500;" class="btn btn-primary"
+      data-bs-toggle="modal"
+                data-bs-target="#exportSentencesDialog" [disabled]="(project.evidence.length === 0) || exporting">EXPORT EXAMPLES</button>
+    </div>
+  </div>
+</div>
+<app-export-dialog></app-export-dialog>

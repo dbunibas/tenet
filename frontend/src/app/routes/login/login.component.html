@@ -1,0 +1,50 @@
+<div class="full-width">
+  <div class="col-sm-12 col-md-8 col-lg-5 mx-auto">
+    <div class="row">
+      <div class="col-4">
+        <img class="rounded mx-auto" src="assets/img/logo-uni.webp" alt="UNIBAS logo"/>
+      </div>
+      <div class="col-8">
+        <h1 class="text-center">TENET</h1>
+      </div>
+    </div>
+
+
+  </div>
+  <div class="card col-sm-12 col-md-8 col-lg-5 mx-auto mt-3">
+    <div class="card-body">
+      <h2 class="card-title text-center">Login</h2>
+      <form [formGroup]="loginForm" (submit)="login()">
+        <div>
+          <label for="username" class="form-text">Username</label>
+          <div class="input-group">
+            <span class="material-symbols-outlined input-group-text">
+              person
+            </span>
+            <input formControlName="username" class="form-control" type="text" id="username"
+                   placeholder="your username..."/>
+          </div>
+          <label *ngIf="usernameField.invalid && usernameField.touched" class="form-text text-danger">
+            Provide a valid username
+          </label>
+        </div>
+        <div>
+          <label for="password" class="form-text">Password</label>
+          <div class="input-group">
+            <span class="material-symbols-outlined input-group-text">
+              key
+            </span>
+            <input formControlName="password" class="form-control" type="password" id="password"
+                   placeholder="your password..."/>
+          </div>
+          <label *ngIf="passwordField.invalid && passwordField.touched" class="form-text text-danger">
+            Provide a valid password
+          </label>
+        </div>
+        <div class="mt-2">
+          <input [disabled]="loginForm.invalid" class="btn btn-primary form-control" type="submit" value="LOGIN"/>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

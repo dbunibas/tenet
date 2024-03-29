@@ -1,0 +1,45 @@
+<div class="modal fade" id="exportSentencesDialog" tabindex="-1" aria-labelledby="exportSentencesDialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5 text-center" id="exportSentencesLabel">EXPORT EXAMPLES</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 text-center">
+          <p>The results will be returned in a JSON file </p>
+          <p>The generation process might take a few minutes.</p>
+        </div>
+        <form [formGroup]="exportExamplesForm" (submit)="export()">
+          <div class="row">
+            <mat-form-field class="col-12 mx-auto">
+              <mat-label>Number of positive evidence</mat-label>
+              <input matInput type="number" placeholder="Ex. 3" formControlName="positiveNumber" min="0">
+              <mat-error >Number must be positive or 0
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field class="col-12 mx-auto">
+              <mat-label>Number of negative evidence</mat-label>
+              <input matInput type="number" placeholder="Ex. 3" formControlName="negativeNumber" min="0">
+              <mat-error>Number must be positive or 0
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field class="col-12 mx-auto">
+              <mat-label>Number of sentences per example</mat-label>
+              <input matInput type="number" placeholder="Ex. 3" formControlName="sentencesNumber" min="1">
+              <mat-error>Number must be positive
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button [disabled]="exportExamplesForm.invalid" type="submit" class="btn btn-primary form-control fw-bold" data-bs-dismiss="modal"
+                    >EXPORT
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+

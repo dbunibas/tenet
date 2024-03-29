@@ -1,0 +1,12 @@
+<mtx-grid [data]="SHOWED_ROWS" #grid [columns]="SHOWED_COLUMNS" [trackBy]="trackByName" [sortDisabled]="true"
+          [disableRowClickSelection]="true" [cellSelectable]="true"
+          [cellTemplate]="cellTemplate">
+  <ng-template #cellTemplate let-row let-col="colDef">
+    <div [ngClass]="row[col.field] ? 'selectionStyle' : ''">{{ getCellValue(row, col) }}</div>
+  </ng-template>
+
+</mtx-grid>
+
+<div>
+  <app-sentences [evidence]="evidence"></app-sentences>
+</div>

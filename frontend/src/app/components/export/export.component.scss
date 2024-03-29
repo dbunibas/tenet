@@ -1,0 +1,14 @@
+div {
+  position: fixed;
+  top: 50;
+  right: 0;
+  margin-right: 0.5rem;
+  color: white;
+  background-color: rgba($color:#0d6efd , $alpha: 0.8);
+  z-index: 1000;
+}
+
+mat-progress-bar.personal {
+  color: white;
+  background: white;
+}

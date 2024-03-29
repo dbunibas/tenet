@@ -1,0 +1,11 @@
+src/__pycache__
+src/model/__pycache__
+src/textGeneration/__pycache__
+src/metrics/__pycache__
+parent/data
+notebook/.ipynb_checkpoints
+__init__.py
+notebook
+example.log
+test/.tmp
+venv/

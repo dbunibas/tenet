@@ -1,0 +1,61 @@
+<div class="container">
+  <div class="card text-primary">
+    <div class="card-header">
+      <h2 class="h2 card-title text-center">Open a project</h2>
+    </div>
+    <div class="card-body">
+      <h3>Load existing scenario</h3>
+      <p>Select an existing project below</p>
+      <form (submit)="loadExistingScenario()" [formGroup]="formLoadScenario" class="row">
+        <div class="col-8">
+          <select *ngIf="existingProjects.length !== 0" formControlName="scenario" class="form-select form-select-lg">
+            <option value=""></option>
+            <option *ngFor="let project of existingProjects" value="{{ project.id }}">{{ project.name }}</option>
+          </select>
+          <p *ngIf="existingProjects.length === 0" class="lead">No existing projects on server</p>
+        </div>
+        <div class="col-4">
+          <input type="submit" value="Open" [disabled]="formLoadScenario.invalid"
+                 class="btn btn-lg btn-primary form-control">
+        </div>
+      </form>
+      <hr>
+      <h3>Create from CSV</h3>
+      <p>Upload a CSV file from your filesystem and create a new project.</p>
+      <form (submit)="createFromCSV()" [formGroup]="formCreate" class="row">
+        <div class="col-8">
+          <div class="row">
+            <div class="col">
+              <input formControlName="file" (change)="fileChange($event)" class="form-control form-control-lg"
+                     id="formFileLg" type="file" accept="text/csv">
+              <label class="form-text text-danger" *ngIf="fileField.hasError('invalid-file')">Only CSV files are
+                allowed</label>
+            </div>
+            <div class="col">
+              <input formControlName="name" class="form-control form-control-lg" type="text"
+                     placeholder="Project Name"/>
+              <label class="form-text text-danger" *ngIf="nameField.invalid && nameField.touched">Provide a valid name
+                for
+                the project</label>
+            </div>
+          </div>
+
+        </div>
+        <div class="col-4">
+          <input type="submit" value="Import" [disabled]="formCreate.invalid"
+                 class="btn btn-lg btn-primary form-control">
+        </div>
+      </form>
+      <hr>
+      <h3>Import from Wikipedia</h3>
+      <p>Choose a table from Wikipedia</p>
+      <div class="row">
+        <div class="col-8">
+        </div>
+        <div class="col-4">
+          <button disabled class="btn btn-lg btn-primary form-control">Open dialog</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

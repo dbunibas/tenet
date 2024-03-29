@@ -1,0 +1,47 @@
+version: "3.8"
+name: "tenet"
+services:
+  mongodb:
+    image: mongo
+    container_name: tenet-mongodb
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./tenet_mongo:/data/db
+    ports:
+      - 27017:27017
+    network_mode: bridge
+
+  postgres:
+    image: postgres
+    container_name: tenet-postgres
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pguser
+      POSTGRES_DB: tenet
+    ports:
+      - 5432:5432
+    network_mode: bridge
+
+  engine:
+    build:
+      context: ../engine
+    image: tenet-engine
+    container_name: tenet-engine
+    volumes:
+      - ./tenet_engine/data:/usr/src/app/data
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    network_mode: bridge
+
+
+volumes:
+  tenet_mongo:
+
+  tenet_engine:
+

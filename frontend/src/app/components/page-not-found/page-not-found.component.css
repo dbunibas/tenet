@@ -1,0 +1,14 @@
+.page-not-found {
+  border: 1px solid lightgray;
+  padding: 2rem;
+  box-shadow: 5px 5px rgba(208, 208, 208, 0.283);
+  width: 400px;
+  margin: 7rem auto;
+  background-color: rgb(249, 249, 249);
+}
+
+h3 {
+  color: var(--bs-primary);
+  text-align: center;
+  margin-bottom: 2rem;
+}

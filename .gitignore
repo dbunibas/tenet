@@ -128,3 +128,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 __init__.py
+cache_CHATGPT.json
+cache_Mistral.json
+compose/tenet_mongo
+cache_GPT3.json
+chatgpt-cache.json
+.editorconfig
+frontend/.vscode
+mongodb/tenet_mongo

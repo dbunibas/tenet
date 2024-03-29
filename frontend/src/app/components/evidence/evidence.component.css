@@ -1,0 +1,16 @@
+@import "~prismjs/themes/prism-twilight";
+
+button.plus-icon {
+  color: white; /*var(--bs-primary);*/
+  font-weight: bold;
+  background-color: var(--bs-primary);
+}
+
+mat-form-field {
+  width: 80%;
+  margin: 0 auto;
+}
+
+div.toolbar {
+  display: none;
+}

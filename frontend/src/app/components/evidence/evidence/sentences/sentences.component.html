@@ -1,0 +1,41 @@
+<div class="card">
+  <div class="card-header">
+    <h3 class="h3">Generate Sentences</h3>
+  </div>
+  <div class="card-body row">
+    <button *ngIf="semanticQueries.length === 0" class="col-md-6 mx-auto btn btn-primary" (click)="findSemantic()">Find
+      Semantic Queries for the evidence
+    </button>
+    <div *ngIf="semanticQueries.length !== 0">
+      <form [formGroup]="formGenerate" (submit)="generateSentences()" id="generateSentenceForm" class="pb-5">
+        <p>Select the semantic query to use and the number of sentence to generate.</p>
+        <div class="row">
+          <div class="col-4">
+            <select class="form-select form-control" formControlName="type">
+              <option *ngFor="let s of semanticQueries" value="{{ s.name }}">{{ s.name }}</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <input class="form-control" min="1" value="1" type="number" formControlName="number"/>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-primary form-control" type="submit" [disabled]="formGenerate.invalid">Generate
+            </button>
+          </div>
+        </div>
+      </form>
+      <div id="sentences">
+        <h4 style="text-align: center;" class="h4" *ngIf="this.sentences.length === 0">Here you will see the generated
+          sentences.</h4>
+        <ul class="list-group list-group-flush">
+
+          <li *ngFor="let sentence of sentences" class="list-group-item">
+            <blockquote class="blockquote">
+              <p class="mb-0">{{ sentence }}</p>
+            </blockquote>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

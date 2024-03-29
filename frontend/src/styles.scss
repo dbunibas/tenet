@@ -1,0 +1,34 @@
+input.ng-invalid.ng-touched {
+  border: 1px solid red;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+div.mat-mdc-tab-disabled { /* Generate Evidences TAB button */
+  opacity: 1 !important;
+}
+
+.mtx-grid {
+  .selectionStyle {
+    background-color: var(--bs-primary);
+    padding: 0.6rem;
+    color: white;
+    font-weight: bold;
+  }
+}
+
+/* Style for SQL code */
+.language-sql {
+  color: #f8f8f2;
+}
+
+.token.keyword {
+  color: #f92672;
+}

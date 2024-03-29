@@ -1,0 +1,13 @@
+export enum C {
+  LOGIN_USER,
+  LOADING,
+  TABLE,
+  PROJECTS,
+  SELECTED_PROJECT_ID,
+  ACTIVE_PROJECT,
+  ORDERED_COLUMNS,
+  // For exporting PopUp
+  EXPORTING,
+  EXPORT_ID,
+  EXPORTS_MAP
+}

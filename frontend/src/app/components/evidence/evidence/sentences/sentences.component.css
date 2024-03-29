@@ -1,0 +1,14 @@
+div.card-header {
+  background-color: var(--bs-primary);
+  color: white;
+  text-align: center;
+  margin-top: 20px;
+}
+
+div#sentences {
+  margin-bottom: 50px;
+}
+
+ul.list-group {
+  text-align: center;
+}

@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@1,900&display=swap');
+
+div.full-width {
+  height: 100vh;
+  background-color: var(--bs-primary);
+}
+
+img {
+
+  margin-top: 5px;
+  width: 10rem;
+}
+
+h1 {
+  font-family: 'Libre Franklin', sans-serif;
+  color: white;
+  padding-top: 2rem;
+  font-weight: bold;
+  font-size: 5rem;
+}

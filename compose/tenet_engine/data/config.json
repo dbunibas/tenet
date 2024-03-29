@@ -1,0 +1,25 @@
+{
+  "CACHE_DIR": "/usr/src/app/data/",
+  "SEED": 17,
+  "NEGATIVE_TABLE_GENERATION": {
+    "addRows": "True",
+    "rowsToAdd": 3,
+    "removeRows": "False",
+    "rowsToRemove": 1,
+    "useLM": "True",
+    "strategy": "ActiveDomain"
+  },
+  "SENTENCE_GENERATION": {
+    "operations": ["lookup", "comparison", "filter", "min", "max", "count", "sum", "avg", "grouping", "ranked", "percentage", "combined"],
+    "comparisons": ["<", ">", "="]
+  },
+  "TENET_CONFIG": {
+    "api_key": "aca999dbdf098db7382c2376fccf47f0e454668d168e5283e5755226040fe514",
+    "bestEvidences": 5,
+    "languageModel": "MistralTogetherAi",
+    "address": "http://host.docker.internal:11434",
+    "rateLimit": "False",
+    "sleepTime": 2,
+    "num_thread": 6
+  }
+}
