@@ -2,9 +2,29 @@
 TExtual traiNing Examples from daTa
 
 # News
-- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_CR_SIGMOD_2024.pdf) Accepted to SIGMOD 2024 
+- 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_CR_SIGMOD_2024.pdf) Accepted to SIGMOD 2024
 
-# Execution
+# User Interface Execution
+To ease the execution we use [Docker](https://www.docker.com/get-started/) and [Angular](https://angular.io/).
+1. Execute the engine. Go to the compose folder:
+   - In tenet_engine/data rename the config.json.TEMPLATE with config.json
+   - Edit config.json according to the configuration properties presented in the Configuration Section
+   - Go to the compose folder and build the images:
+     ```shell
+     docker-compose up --build
+     ```
+2. Execute the backend. Go to the backend folder:
+   ```shell
+     gradlew quarkusDev
+     ```
+3. Execute the frontend. Go to the frontend folder:
+   ```shell
+     ng serve
+     ```
+4. Open the application at http://localhost:4200/. The current username is admin and password tenet! you could change it by connecting to the Mongo DB instance deployed with docker.
+
+
+# Engine Only Execution
 
 1. Make sure you have an OPEN-AI Key to execute the workflow.
 2. Install requirements (pip install -r requirements.txt)
@@ -19,6 +39,7 @@ TExtual traiNing Examples from daTa
 
 Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
 To train and test target applications unzip the file and follow the readme per each application.
+
 
 # Citation
 @article{TenetSigmod,
