@@ -4,6 +4,9 @@ TExtual traiNing Examples from daTa
 # News
 - 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_CR_SIGMOD_2024.pdf) Accepted to SIGMOD 2024
 
+# Demonstration Video
+[![Coming Soon](https://img.youtube.com/vi/TtqKymy18-o/maxresdefault.jpg)](https://youtu.be/TtqKymy18-o)
+
 # User Interface Execution
 To ease the execution we use [Docker](https://www.docker.com/get-started/) and [Angular](https://angular.io/).
 1. Execute the engine. Go to the compose folder:
