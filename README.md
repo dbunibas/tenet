@@ -44,7 +44,7 @@ The configuration can be done through the config.json file. It consists of three
 
 # Engine Only Execution
 
-1. Make sure you have an OPEN-AI Key to execute the workflow.
+1. Make sure you have an LLM installed on your machine or a API_KEY to execute the workflow.
 2. Install requirements (pip install -r requirements.txt)
 3. Create a Postgres database with the following configuration:
    - dbname = "tenet"
@@ -52,8 +52,8 @@ The configuration can be done through the config.json file. It consists of three
    - Notice: you can change the values in src/queryExecutor/PostgresExecutor.py
 4. An example of the execution of the system is in test/TestTenet.py
    - Given a relational table as input
-   - And the evidence (a set of cells selected by the user), ad input (but optionally)
-   - Generate positive and negative examples according the relational table and the provided evidence.
+   - And the evidence (a set of cells selected by the user), and input (but optionally)
+   - Generate positive and negative examples according to the relational table and the provided evidence.
 
 Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
 To train and test target applications unzip the file and follow the readme per each application.
