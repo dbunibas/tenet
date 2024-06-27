@@ -60,6 +60,7 @@ To train and test target applications unzip the file and follow the readme per e
 
 
 # Citation
+```
 @article{TenetSigmod,
   author = {Jean-Flavien, Bussotti and Enzo, Veltri and Donatello, Santoro and Paolo, Papotti},
   title = {{Generation of Training Examples for Tabular Natural Language Inference}},
@@ -68,5 +69,5 @@ To train and test target applications unzip the file and follow the readme per e
   year = {2023},
   doi = {10.1145/3626730},
 }
-
+```
 
