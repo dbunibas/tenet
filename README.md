@@ -11,7 +11,8 @@ Tenet generates human-like examples, which lead to the effective training of sev
 [![Coming Soon](https://img.youtube.com/vi/TtqKymy18-o/maxresdefault.jpg)](https://youtu.be/TtqKymy18-o)
 
 # User Interface Execution
-To ease the execution we use [Docker](https://www.docker.com/get-started/) and [Angular](https://angular.io/).
+To ease the execution we use [Docker](https://www.docker.com/get-started/) and [Angular](https://angular.io/). We also assume that [Java](https://www.oracle.com/java/technologies/downloads/) (at least 21) is available on the machine.
+
 1. Execute the engine. Go to the compose folder:
    - In tenet_engine/data rename the config.json.TEMPLATE with config.json
    - Edit config.json according to the configuration properties presented in the Configuration Section
