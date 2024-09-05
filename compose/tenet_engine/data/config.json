@@ -16,7 +16,7 @@
   "TENET_CONFIG": {
     "api_key": "YOUR_API_KEY",
     "bestEvidences": 5,
-    "languageModel": "MistralTogetherAi",
+    "languageModel": "MistralOllama",
     "address": "http://host.docker.internal:11434",
     "rateLimit": "False",
     "sleepTime": 2,

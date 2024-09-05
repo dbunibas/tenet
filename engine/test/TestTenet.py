@@ -1,5 +1,6 @@
 import unittest
 
+from src.api.ConfigSingleton import ConfigSingleton
 from src import Constants
 from src.Tenet import Tenet
 from src.model.RelationalTable import Table, Header, Cell, Database, Evidence
@@ -93,13 +94,24 @@ class TestTenet(unittest.TestCase):
                       Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
                       Constants.OPERATION_SUM, Constants.OPERATION_AVG]
         comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
-        languageModel = Constants.LANGUAGE_MODEL_CHAT_GTP
+        config = ConfigSingleton()
+        seed = config.SEED
+        addRows = config.NEGATIVE_TABLE_GENERATION_ADD_ROWS
+        rowsToAdd = config.NEGATIVE_TABLE_GENERATION_ROWS_TO_ADD
+        removeRows = config.NEGATIVE_TABLE_GENERATION_REMOVE_ROWS
+        rowsToRemove = config.NEGATIVE_TABLE_GENERATION_ROWS_TO_REMOVE
+        # operations = config.SENTENCE_GENERATION_OPERATIONS
+        # comparisons = config.SENTENCE_GENERATION_COMPARISONS
+        bestEvidences = config.CONFIG_TENET_BEST_EVIDENCES
+        languageModel = config.CONFIG_TENET_LANGUAGE_MODEL
+        rateLimit = config.CONFIG_TENET_RATE_LIMIT
+        sleepTime = config.CONFIG_TENET_SLEEP_TIME
+        address = config.CONFIG_TENET_ADDRESS
+
         bestEvidences = 5
-        sentencesPerExample = 3
-        rateLimit = True
-        sleepTime = 21  ## rateLimit 3 requests per minute
-        tenet = Tenet(self.database, seed, operations, comparisons, bestEvidences, sentencesPerExample, languageModel,
-                      rateLimit, sleepTime)
+        tenet = Tenet(self.database, seed, operations, comparisons, bestEvidences=bestEvidences,
+                sentencesPerExample=1, languageModel=languageModel, rateLimit=rateLimit,
+                sleepTime=sleepTime, address=address)
         tenet.disableLanguageModel()
         positiveExamples = tenet.generatePositiveExamples(tableName, evidenceSel, numEvidence)
         negativeExamples = tenet.generateNegativeExamples(tableName, evidenceSel, numEvidence, addRows, rowsToAdd,
@@ -127,18 +139,32 @@ class TestTenet(unittest.TestCase):
         strategy = Constants.STRATEGY_ACTIVE_DOMAIN
         if strategy == Constants.STRATEGY_LM_GENERATOR:
             useLM = True
-        seed = 17
         operations = [Constants.OPERATION_LOOKUP, Constants.OPERATION_COMPARISON, Constants.OPERATION_FILTER,
                       Constants.OPERATION_MIN, Constants.OPERATION_MAX, Constants.OPERATION_COUNT,
                       Constants.OPERATION_SUM, Constants.OPERATION_AVG]
         comparisons = [Constants.OPERATOR_SAME, Constants.OPERATOR_LT, Constants.OPERATOR_GT]
         languageModel = Constants.LANGUAGE_MODEL_CHAT_GTP
         bestEvidences = 5
-        sentencesPerExample = 3
         rateLimit = True
         sleepTime = 21  ## rateLimit 3 requests per minute
-        tenet = Tenet(self.database, seed, operations, comparisons, bestEvidences, sentencesPerExample, languageModel,
-                      rateLimit, sleepTime)
+        config = ConfigSingleton()
+        seed = config.SEED
+        addRows = config.NEGATIVE_TABLE_GENERATION_ADD_ROWS
+        rowsToAdd = config.NEGATIVE_TABLE_GENERATION_ROWS_TO_ADD
+        removeRows = config.NEGATIVE_TABLE_GENERATION_REMOVE_ROWS
+        rowsToRemove = config.NEGATIVE_TABLE_GENERATION_ROWS_TO_REMOVE
+        # operations = config.SENTENCE_GENERATION_OPERATIONS
+        # comparisons = config.SENTENCE_GENERATION_COMPARISONS
+        bestEvidences = config.CONFIG_TENET_BEST_EVIDENCES
+        languageModel = config.CONFIG_TENET_LANGUAGE_MODEL
+        rateLimit = config.CONFIG_TENET_RATE_LIMIT
+        sleepTime = config.CONFIG_TENET_SLEEP_TIME
+        address = config.CONFIG_TENET_ADDRESS
+
+        bestEvidences = 5
+        tenet = Tenet(self.database, seed, operations, comparisons, bestEvidences=bestEvidences,
+                sentencesPerExample=1, languageModel=languageModel, rateLimit=rateLimit,
+                sleepTime=sleepTime, address=address)
         ## if evidenceSel is None then Cold
         positiveExamples = tenet.generatePositiveExamples(tableName, evidenceSel, numEvidence)
         negativeExamples = tenet.generateNegativeExamples(tableName, evidenceSel, numEvidence, addRows, rowsToAdd,

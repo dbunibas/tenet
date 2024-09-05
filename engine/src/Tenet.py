@@ -127,7 +127,7 @@ class Tenet:
         if evidenceSel is None:
             evidences = self.coldSearch.findEvidences(table, numEvidence, evidenceSel)
         else:
-            evidences = self.warmSearch.findEvidences(table, numEvidence, evidenceSel)  # Per positive
+            evidences, query, attrMapping = self.warmSearch.findEvidences(table, numEvidence, evidenceSel)  # Per positive
         end = time.time()
         if self.statistics is not None:
             self.statistics.data[Constants.STATISTICS_EVIDENCE_GENERATION] += (end - start)

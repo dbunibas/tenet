@@ -10,26 +10,48 @@ Tenet generates human-like examples, which lead to the effective training of sev
 # Demonstration Video
 [![Coming Soon](https://img.youtube.com/vi/TtqKymy18-o/maxresdefault.jpg)](https://youtu.be/TtqKymy18-o)
 
-# User Interface Execution
-To ease the execution we use [Docker](https://www.docker.com/get-started/) and [Angular](https://angular.io/). We also assume that [Java](https://www.oracle.com/java/technologies/downloads/) (at least 21) is available on the machine.
 
-1. Execute the engine. Go to the compose folder:
-   - In tenet_engine/data rename the config.json.TEMPLATE with config.json
+# Requirements
+In order to execute the engine, a valid LLM provider need to be specify. The system supports three providers:
+1. OpenAI with a valid API key
+2. TogheterAI with a valid API key
+3. Ollama installed locally, with the [Mistral](https://ollama.com/library/mistral) model 
+The configuration of one of these provider need to be specified in the configuration section.
+
+In addition, the following tools are required:
+- [Docker](https://www.docker.com/get-started/) - to run the Engine
+- [Node](https://nodejs.org/en) (optional) - to run the Web Interface
+- [Java](https://www.oracle.com/java/technologies/downloads/) (at least 21) - to run the Web Interface
+
+
+# Engine Only Execution
+
+1. Make sure you have an LLM installed on your machine or a API_KEY to execute the workflow.
+
+2. Edit the configuration:
+   - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json
    - Edit config.json according to the configuration properties presented in the Configuration Section
+
+3. Edit the examples:
+   - The distribution contains a set of test classes, that can be modified. For instance, an example of the execution of the system is in test/TestTenet.py
+   - Given a relational table as input
+   - And the evidence (a set of cells selected by the user), and input (but optionally)
+   - Generate positive and negative examples according to the relational table and the provided evidence.
+
+4. Execute the engine and run the examples
    - Go to the compose folder and build the images:
      ```shell
-     docker-compose up --build
+     cd compose/
+     docker-compose up --build -d
+     docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
-2. Using a client for Mongo DB, connect to the dockerized Mongo instance.
-   - Create a database named tenet
-   - Create a collection named users in tenet database
-   - Insert the following:
-      ```
-     {
-         "username": "admin",
-         "password": "0dc1e407b82b610ec695936497b694dd"
-      }
-     ```
+Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
+To train and test target applications unzip the file and follow the readme per each application.
+
+# User Interface Execution
+To ease the execution we use Docker. We also assume that Java (at least 21) is available on the machine.
+
+
       
 2. Execute the backend. Go to the backend folder:
    ```shell
@@ -54,21 +76,6 @@ The configuration can be done through the config.json file. It consists of three
   - "address" allows to set up the address of the Ollama server
 
 
-# Engine Only Execution
-
-1. Make sure you have an LLM installed on your machine or a API_KEY to execute the workflow.
-2. Install requirements (pip install -r requirements.txt)
-3. Create a Postgres database with the following configuration:
-   - dbname = "tenet"
-   - user and passw = "pguser"
-   - Notice: you can change the values in src/queryExecutor/PostgresExecutor.py
-4. An example of the execution of the system is in test/TestTenet.py
-   - Given a relational table as input
-   - And the evidence (a set of cells selected by the user), and input (but optionally)
-   - Generate positive and negative examples according to the relational table and the provided evidence.
-
-Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
-To train and test target applications unzip the file and follow the readme per each application.
 
 
 # Citation

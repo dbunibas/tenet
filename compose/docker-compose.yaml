@@ -8,7 +8,8 @@ services:
       - PUID=1000
       - PGID=1000
     volumes:
-      - ./tenet_mongo:/data/db
+      - ./tenet_mongo/data:/data/db
+      - ./tenet_mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     ports:
       - 27017:27017
     network_mode: bridge
