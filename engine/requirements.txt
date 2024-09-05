@@ -33,3 +33,4 @@ uvicorn
 pydantic
 langchain
 together
+langchain-community
