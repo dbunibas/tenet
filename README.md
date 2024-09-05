@@ -19,6 +19,17 @@ To ease the execution we use [Docker](https://www.docker.com/get-started/) and [
      ```shell
      docker-compose up --build
      ```
+2. Using a client for Mongo DB, connect to the dockerized Mongo instance.
+   - Create a database named tenet
+   - Create a collection named users in tenet database
+   - Insert the following:
+      ```
+     {
+         "username": "admin",
+         "password": "0dc1e407b82b610ec695936497b694dd"
+      }
+     ```
+      
 2. Execute the backend. Go to the backend folder:
    ```shell
      gradlew quarkusDev
