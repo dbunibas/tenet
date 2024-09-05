@@ -31,7 +31,7 @@
     ]
   },
   "TENET_CONFIG": {
-    "api_key": "aca999dbdf098db7382c2376fccf47f0e454668d168e5283e5755226040fe514",
+    "api_key": "YOUR_API_KEY",
     "bestEvidences": 5,
     "languageModel": "MistralTogetherAi",
     "address": "http://host.docker.internal:11434",
