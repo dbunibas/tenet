@@ -30,7 +30,7 @@ In addition, the following tools are required:
 
 2. Edit the configuration:
    - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json
-   - Edit config.json according to the configuration properties presented in the Configuration Section
+   - Edit config.json according to the configuration properties presented in the [Configuration Section](#configuration)
 
 3. Edit the examples:
    - The distribution contains a set of test classes, that can be modified. For instance, an example of the execution of the system is in test/TestTenet.py
