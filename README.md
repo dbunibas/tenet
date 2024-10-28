@@ -8,7 +8,7 @@ Tenet generates human-like examples, which lead to the effective training of sev
 - 2023-08 Research paper [Generation of Training Examples for Tabular Natural Language Inference](https://github.com/dbunibas/tenet/blob/main/TENET_CR_SIGMOD_2024.pdf) Accepted to SIGMOD 2024
 
 # Demonstration Video
-[![Coming Soon](https://img.youtube.com/vi/TtqKymy18-o/maxresdefault.jpg)](https://youtu.be/TtqKymy18-o)
+[<img src="https://img.youtube.com/vi/TtqKymy18-o/maxresdefault.jpg" width="60%">](https://youtu.be/TtqKymy18-o)
 
 
 # Requirements
