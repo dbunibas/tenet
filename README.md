@@ -67,7 +67,7 @@ To ease the execution we use Docker. We also assume that Java (at least 21) is a
 The configuration can be done through the config.json file. It consists of three main sections:
 1. Negative Table Generation contains the different strategies to use to generate negative evidence through an error injection process.
   - addRows (removeRows) = 'True' or 'False' if new rows should be added (rows to be removed) to generate the negative table
-  - rowsToAdd (rowsToRemoce) = the number of new rows to add (remove)
+  - rowsToAdd (rowsToRemove) = the number of new rows to add (remove)
   - strategy = "ActiveDomain" or "LMGenerator". With ActiveDomain values for new rows are extracted from the ActiveDomain, instead by using "LMGenerator" it uses a PLM to generate the values.
 2. Sentence Generation contains the allowed semantic-queries to use and that could be discovered through the searching process, and also the comparison operator to use. Available values for operations are: "lookup", "comparison", "filter", "min", "max", "count", "sum", "avg", "grouping", "ranked", "percentage", "combined". While values for comparison are "<", ">", "=".
 3. Text generation Language Model configuration.
