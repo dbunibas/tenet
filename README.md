@@ -59,7 +59,7 @@ ollama pull mistral
      ```
 4. Execute the engine on a custom class. We assume that the previous steps have been executed.
     ```shell
-     cp ../engine/test/TestTenet.py ./NewTest.py
+     cp ../engine/test/TestTenet.py ./TestNew.py
      docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestNew.py'
      ```
