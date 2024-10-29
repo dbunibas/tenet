@@ -1,4 +1,4 @@
-# tenet
+# TENET
 **Textual Training Examples from Data**
 
 Tabular data is becoming increasingly important in Natural Language Processing (NLP) tasks, such as Tabular Natural Language Inference (TNLI). Given a table and a hypothesis expressed in NL text, the goal is to assess if the former structured data supports or refutes the latter. We introduce Tenet, for the automatic augmentation and generation of training examples for TNLI. Our approach is built around the intuition that SQL queries are the right tool to achieve variety in the generated examples, both in terms of data variety and reasoning complexity. The first is achieved by evidence-queries that identify cell values over tables according to different data patterns. Once the data for the example is identified, semantic-queries describe the different ways such data can be identified with standard SQL clauses. These rich descriptions are then verbalized as text to create the annotated examples for the TNLI task. The same approach is also extended to create counterfactual examples, i.e., examples where the hypothesis is false, with a method based on injecting errors in the original (clean) table. For all steps, we introduce generic generation algorithms that take as input only the tables. 
@@ -16,7 +16,7 @@ In order to execute the engine, a valid LLM provider need to be specify. The sys
 1. OpenAI with a valid API key
 2. TogheterAI with a valid API key
 3. Ollama installed locally, with the [Mistral](https://ollama.com/library/mistral) model 
-The configuration of one of these provider need to be specified in the configuration section.
+The configuration of one of these providers needs to be specified in the configuration section.
 
 In addition, the following tools are required:
 - [Docker](https://www.docker.com/get-started/) - to run the Engine
@@ -38,7 +38,7 @@ ollama pull mistral
 
 # Engine Only Execution
 
-1. Make sure you have an LLM installed on your machine or a API_KEY to execute the workflow.
+1. Make sure you have an LLM installed on your machine or an API_KEY to execute the workflow.
 
 2. Edit the configuration:
    - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json (see command below)
@@ -57,7 +57,7 @@ ollama pull mistral
      docker-compose up --build -d
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
-4. Execute the engine on a custom class. We assume that the previous step has already executed.
+4. Execute the engine on a custom class. We assume that the previous steps have been executed.
     ```shell
      cp ../engine/test/TestTenet.py ./NewTest.py
      docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
