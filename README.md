@@ -45,23 +45,37 @@ In addition, the following tools are required:
      docker-compose up --build -d
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
+5. Execute the engine on a custom class. We assume that the previous step is already executed
+    ```shell
+     cp ../engine/test/TestTenet.py ./NewTest.py
+     docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
+     docker exec -it tenet-engine python -m unittest discover -s test -p 'TestNew.py'
+     ```
+    Using this approach, custom data can be introduced in the NewTest class (we duplicate the file for simplicity) and the workflow executed.
+
 Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
 To train and test target applications unzip the file and follow the readme per each application.
 
 # User Interface Execution
 To ease the execution we use Docker. We also assume that Java (at least 21) is available on the machine.
 
-
-      
-2. Execute the backend. Go to the backend folder:
+1. Execute the engine with the previous commands:
    ```shell
+     cd compose/
+     docker-compose up --build -d
+   ```
+
+3. Execute the backend in a new terminal. Go to the backend folder:
+   ```shell
+     cd backend/
      gradlew quarkusDev
      ```
-3. Execute the frontend. Go to the frontend folder:
+4. Execute the frontend in a new terminal. Go to the frontend folder:
    ```shell
+     cd frontend/
      ng serve
      ```
-4. Open the application at http://localhost:4200/. The current username is admin and password tenet! you could change it by connecting to the Mongo DB instance deployed with docker.
+5. Open the application at http://localhost:4200/. The current username is admin and password tenet! you could change it by connecting to the Mongo DB instance deployed with docker.
 
 # Configuration
 The configuration can be done through the config.json file. It consists of three main sections:
