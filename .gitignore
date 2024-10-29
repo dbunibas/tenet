@@ -130,7 +130,7 @@ dmypy.json
 __init__.py
 cache_CHATGPT.json
 cache_Mistral.json
-compose/tenet_mongo
+compose/tenet_mongo/data
 cache_GPT3.json
 chatgpt-cache.json
 .editorconfig
