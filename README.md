@@ -76,11 +76,12 @@ To ease the execution we use Docker. We also assume that Java (at least 21) is a
      docker-compose up --build -d
    ```
 
-3. Execute the backend in a new terminal. Go to the backend folder:
+3. Execute the backend in a new terminal using Gradle Wrapper. Go to the backend folder:
    ```shell
      cd backend/
-     gradlew quarkusDev
+     ./gradlew quarkusDev
      ```
+
 4. Execute the frontend in a new terminal. Go to the frontend folder:
    ```shell
      cd frontend/
