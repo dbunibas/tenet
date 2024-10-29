@@ -23,39 +23,50 @@ In addition, the following tools are required:
 - [Node](https://nodejs.org/en) (optional) - to run the Web Interface
 - [Java](https://www.oracle.com/java/technologies/downloads/) (at least 21) - to run the Web Interface
 
+Is possible to install the requirements via [Brew](https://brew.sh/).
+```shell
+brew install docker
+brew install node
+brew install openjdk@21
+brew install ollama
+```
+
+Then pull the Mistral Model:
+```shell
+ollama pull mistral
+```
 
 # Engine Only Execution
 
 1. Make sure you have an LLM installed on your machine or a API_KEY to execute the workflow.
 
 2. Edit the configuration:
-   - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json
+   - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json (see command below)
    - Edit config.json according to the configuration properties presented in the [Configuration Section](#configuration)
+   
+  The default configuration uses Ollama executed locally, we can use it simply by renaming the config.json.TEMPLATE. And we can execute the engine without any further configuration.
+  
+  ```shell
+  mv compose/tenet_engine/data/config.json.TEMPLATE compose/tenet_engine/data/config.json
+  ```
 
-3. Edit the examples:
-   - The distribution contains a set of test classes, that can be modified. For instance, an example of the execution of the system is in test/TestTenet.py
-   - Given a relational table as input
-   - And the evidence (a set of cells selected by the user), and input (but optionally)
-   - Generate positive and negative examples according to the relational table and the provided evidence.
-
-4. Execute the engine and run the examples
+3. Execute the engine and run the examples
    - Go to the compose folder and build the images:
      ```shell
      cd compose/
      docker-compose up --build -d
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
-5. Execute the engine on a custom class. We assume that the previous step is already executed
+4. Execute the engine on a custom class. We assume that the previous step has already executed.
     ```shell
      cp ../engine/test/TestTenet.py ./NewTest.py
      docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestNew.py'
      ```
-    Using this approach, custom data can be introduced in the NewTest class (we duplicate the file for simplicity) and the workflow executed.
-
-Data Folder contains the generated training dataset and the full pipeline for training the target applications (Tenet submission.7z).
-To train and test target applications unzip the file and follow the readme per each application.
-
+    Using this approach, custom data can be introduced in the NewTest class (we duplicate the file for simplicity) and the workflow executed. For example, the NewTest.py can be edited to change the input data, and the input evidence. Essentially, the input for the classes is as follows:
+   - A relational table
+   - The evidence (a set of cells selected by the user)
+  
 # User Interface Execution
 To ease the execution we use Docker. We also assume that Java (at least 21) is available on the machine.
 
