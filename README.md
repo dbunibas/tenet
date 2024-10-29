@@ -85,6 +85,7 @@ To ease the execution we use Docker. We also assume that Java (at least 21) is a
 4. Execute the frontend in a new terminal. Go to the frontend folder:
    ```shell
      cd frontend/
+     npm install
      ng serve
      ```
 5. Open the application at http://localhost:4200/. The current username is admin and password tenet! you could change it by connecting to the Mongo DB instance deployed with docker.
