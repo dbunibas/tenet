@@ -57,13 +57,13 @@ ollama pull mistral
      docker-compose up --build -d
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
-4. Execute the engine on a custom class. We assume that the previous steps have been executed.
+4. Execute the engine on a custom class. An example of the code can be seen in [TestTenet](https://github.com/dbunibas/tenet/blob/main/engine/test/TestTenet.py). We assume that the previous steps have been executed. For simplicity we simply duplicate TestTenet.
     ```shell
      cp ../engine/test/TestTenet.py ./TestNew.py
      docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
      docker exec -it tenet-engine python -m unittest discover -s test -p 'TestNew.py'
      ```
-    Using this approach, custom data can be introduced in the NewTest class (we duplicate the file for simplicity) and the workflow executed. For example, the NewTest.py can be edited to change the input data, and the input evidence. Essentially, the input for the classes is as follows:
+    Using this approach, custom data (table and selected evidence) can be introduced in the NewTest class and the workflow can be executed. For example, the NewTest.py can be edited to change the input data, and the input evidence. Essentially, the input for the classes is as follows:
    - A relational table
    - The evidence (a set of cells selected by the user)
   
