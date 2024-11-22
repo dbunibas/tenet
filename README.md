@@ -15,7 +15,7 @@ Tenet generates human-like examples, which lead to the effective training of sev
 In order to execute the engine, a valid LLM provider need to be specify. The system supports three providers:
 1. OpenAI with a valid API key
 2. TogheterAI with a valid API key
-3. Ollama installed locally, with the [Mistral](https://ollama.com/library/mistral) model 
+3. Ollama installed locally or via docker, with the [Mistral](https://ollama.com/library/mistral) model 
 The configuration of one of these providers needs to be specified in the configuration section.
 
 In addition, the following tools are required:
@@ -28,12 +28,6 @@ Is possible to install the requirements via [Brew](https://brew.sh/).
 brew install docker
 brew install node
 brew install openjdk@21
-brew install ollama
-```
-
-Then pull the Mistral Model:
-```shell
-ollama pull mistral
 ```
 
 # Engine Only Execution
@@ -43,25 +37,32 @@ ollama pull mistral
 2. Edit the configuration:
    - In compose/tenet_engine/data rename the config.json.TEMPLATE with config.json (see command below)
    - Edit config.json according to the configuration properties presented in the [Configuration Section](#configuration)
-   
-  The default configuration uses Ollama executed locally, we can use it simply by renaming the config.json.TEMPLATE. And we can execute the engine without any further configuration.
+
+  To simplify project setup, a `docker-compose.yml` file containing all the necessary tools is provided in the repository. To use this environment, simply rename the `config.json.TEMPLATE` file—no additional configuration is required.
   
   ```shell
   mv compose/tenet_engine/data/config.json.TEMPLATE compose/tenet_engine/data/config.json
   ```
 
-3. Execute the engine and run the examples
-   - Go to the compose folder and build the images:
+3. Execute the engine
+   ```shell
+    cd compose/
+    docker-compose up --build
+    ```
+This command will start PostgreSQL, Ollama, MongoDB and the Engine in the background. Please note that the first time you start Ollama, it will download the `mistral` model, which may take some time.
+Please be sure to run the next steps only when the download of the mistral model is concluded (you should see the message `tenet-ollama    | 🟢 Done!`)
+
+4.  Run the examples
+   - Using another terminal, navigate again to the compose folder execute the test:
      ```shell
      cd compose/
-     docker-compose up --build -d
-     docker exec -it tenet-engine python -m unittest discover -s test -p 'TestTenet.py'
+     docker-compose exec -it engine python -m unittest discover -s test -p 'TestTenet.py'
      ```
-4. Execute the engine on a custom class. An example of the code can be seen in [TestTenet](https://github.com/dbunibas/tenet/blob/main/engine/test/TestTenet.py). We assume that the previous steps have been executed. For simplicity we simply duplicate TestTenet.
+5. Execute the engine on a custom class. An example of the code can be seen in [TestTenet](https://github.com/dbunibas/tenet/blob/main/engine/test/TestTenet.py). We assume that the previous steps have been executed. For simplicity we simply duplicate TestTenet.
     ```shell
      cp ../engine/test/TestTenet.py ./TestNew.py
      docker cp ./TestNew.py tenet-engine:/usr/src/app/test/TestNew.py
-     docker exec -it tenet-engine python -m unittest discover -s test -p 'TestNew.py'
+     docker-compose exec -it engine python -m unittest discover -s test -p 'TestNew.py'
      ```
     Using this approach, custom data (table and selected evidence) can be introduced in the NewTest class and the workflow can be executed. For example, the NewTest.py can be edited to change the input data, and the input evidence. Essentially, the input for the classes is as follows:
    - A relational table

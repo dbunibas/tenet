@@ -65,7 +65,7 @@ class ConfigSingleton(object):
                 cls.instance.CONFIG_TENET_API_KEY = "API_KEY"
                 cls.instance.CONFIG_TENET_BEST_EVIDENCES = 5
                 cls.instance.CONFIG_TENET_LANGUAGE_MODEL = Constants.LANGUAGE_MODEL_MISTRAL_OLLAMA
-                cls.instance.CONFIG_TENET_ADDRESS = "http://host.docker.internal:11434"
+                cls.instance.CONFIG_TENET_ADDRESS = "http://ollama:11434"
                 cls.instance.CONFIG_TENET_RATE_LIMIT = False
                 cls.instance.CONFIG_TENET_SLEEP_TIME = 0
                 cls.instance.CONFIG_TENET_NUM_THREAD = 0

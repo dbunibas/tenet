@@ -17,7 +17,7 @@
     "api_key": "YOUR_API_KEY",
     "bestEvidences": 5,
     "languageModel": "MistralOllama",
-    "address": "http://host.docker.internal:11434",
+    "address": "http://ollama:11434",
     "rateLimit": "False",
     "sleepTime": 2,
     "num_thread": 6

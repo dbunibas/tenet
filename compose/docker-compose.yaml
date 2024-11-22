@@ -9,9 +9,8 @@ services:
     volumes:
       - ./tenet_mongo/data:/data/db
       - ./tenet_mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    ports:
-      - 27017:27017
-    network_mode: bridge
+    # ports:
+      # - 27017:27017
 
   postgres:
     image: postgres
@@ -20,9 +19,8 @@ services:
       POSTGRES_USER: pguser
       POSTGRES_PASSWORD: pguser
       POSTGRES_DB: tenet
-    ports:
-      - 5432:5432
-    network_mode: bridge
+    # ports:
+    #   - 5432:5432
 
   engine:
     build:
@@ -37,7 +35,20 @@ services:
       - postgres
     links:
       - postgres
-    network_mode: bridge
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    # ports:
+    #     - 11434:11434
+    volumes:
+        - ./tenet_ollama/ollama:/root/.ollama
+        - ./tenet_ollama/entrypoint.sh:/entrypoint.sh
+    container_name: tenet-ollama
+    pull_policy: always
+    tty: true
+    restart: always
+    entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
 
 
 volumes:
