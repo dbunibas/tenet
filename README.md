@@ -104,6 +104,8 @@ The configuration can be done through the config.json file. It consists of three
   - `address` allows to set up the address of the Ollama server, the default configuration contains the default address for Ollama through Docker.
 
 
+# Experiment Pipeline Execution
+To execute the experiments please refer to the following page: [Running The Pipeline](https://github.com/dbunibas/tenet/blob/main/engine/verifiers/running_verifiers_2.md).
 
 
 # Citation
