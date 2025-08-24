@@ -2,23 +2,27 @@ import io
 import os
 import json
 import together
+
+from src import Constants
 from src.api.ConfigSingleton import ConfigSingleton
 from src.textGeneration.ILanguageModel import ILanguageModel
 from src.textGeneration.TextUtils import remove_tabs, remove_endline, remove_multipleSpaces
 import logging
 import time
+from together import Together
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-class MistralTogetherAILanguageModel(ILanguageModel):
+class GenericgetherAILanguageModel(ILanguageModel):
 
-    def __init__(self):
+    def __init__(self, toghetherAiModelName):
         self.initModel()
+        self.toghetherAiModelName = toghetherAiModelName
         self.useCache = True
-        # self.cacheFile = Constants.CACHE_DIR + "cache_Mistral.json"
-        self.cacheFile = str(ConfigSingleton().CACHE_DIR) + "cache_Mistral.json"
+        #self.cacheFile = Constants.CACHE_DIR + "/cache_Llama3.json"
+        self.cacheFile = str(ConfigSingleton().CACHE_DIR) + "cache_"+ toghetherAiModelName + ".json"
         self.cache = {}
         self.sleepTime = ConfigSingleton().CONFIG_TENET_SLEEP_TIME  # seconds
         if self.useCache and os.path.isfile(self.cacheFile):
@@ -32,27 +36,24 @@ class MistralTogetherAILanguageModel(ILanguageModel):
                     logging.debug("*** Cache file empty")
 
     def initModel(self):
-        together.api_key = ConfigSingleton().CONFIG_TENET_API_KEY
-        # together.Models.start("mistralai/Mistral-7B-Instruct-v0.2")
-        # print(together.Models.__dict__)
-        # object_methods = [method_name for method_name in dir(together.Models) if callable(getattr(together.Models, method_name))]
-        # print(object_methods)
+        pass
 
     def invokeModel(self, prompt, temperature=0.0):
         try:
-            output = together.Complete.create(
-                prompt="[INST] " + prompt + " [/INST]",
-                model="mistralai/Mistral-7B-Instruct-v0.2",
-                # max_tokens=4096,
-                temperature=temperature,
-                top_k=50,
-                # top_p=0.0,
-                # repetition_penalty=1.0,
-                # stop=['</s>']
+            client = Together(api_key=ConfigSingleton().CONFIG_TENET_API_KEY)
+            output = client.chat.completions.create(
+                    model=self.toghetherAiModelName,
+                    messages=[
+                      {
+                        "role": "user",
+                        "content": prompt
+                      }
+                    ]
             )
-            modelOutput = output['output']['choices'][0]['text']
+            modelOutput = output.choices[0].message.content
             return modelOutput
-        except:
+        except Exception as e:
+            #print("Exception: " + str(e))
             return None
 
     def generateText(self, prompt, nSentences=None) -> list:
@@ -105,16 +106,14 @@ class MistralTogetherAILanguageModel(ILanguageModel):
         examples.append("""
 Table: Persons
 -----------
-Name | Year
+Name | Year | Country | Salary
 -----------
-Enzo | 35
-null | null
-Paolo | 45
-John | null
+Enzo | 35 | ITA | 10000
+Paolo | 45 | SPA | 2000
 ----------
 
-Task: read(name,year)[*]
-Example: Enzo is 35 and Paolo is 45 years old.
+Task: read(name,country)[*]
+Example: Enzo is from Italy and Paolo is from Spain.
 """)
 
         examples.append("""
@@ -375,7 +374,19 @@ Paolo | 36000
 Task: read(name,income)[*] percentage(income, >)=33.33%
 Example: Paolo has 33.33% of the income higher than Enzo
 """)
-        prompt = "You are a helpful assistant that generate text from a given example. If you cannot complete task return 'FAILED'. \nPlease return only the sentence generated. Do not explain the task.\n"
+        #prompt = "You are a helpful assistant that generate text from a given example. If you cannot complete task return 'FAILED'. \nPlease return only the sentence generated. Do not explain the task.\n"
+        prompt = """I have some data in a table. I want you to express the data in a sentence.
+To help you in adding semantics to the sentence, I will also add as metadata some functions that express the semantics I would like you to report in the sentence.
+
+We have a set of sentences and the corresponding semantics are reported below:
+- read(attrs)[*] --> read the values associated to the attrs list
+- compare(comparator, attr) --> compare two or more rows on the attribute, is usually used in combination with read
+- compute(function, attr) = value --> verbalize the function associated to the attribute where the values is value. Functions are min, max, avg, count and so on
+- filter(attr) condition --> filter the rows where for the attribute attr the condition holds
+- percentage(attribute, comparator) percValue --> read the percValue associated to the attribute
+- ranked(position, attribute) --> read the position with respect to the attribute.
+
+Here are some examples:"""
         prompt = prompt + "\n==========".join(examples) + "\n=========="
         return prompt
 

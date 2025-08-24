@@ -14,6 +14,9 @@ from src.model.RefuteInstancesGenerator import RefuteInstancesGenerator
 from src.model.RelationalTable import Evidence
 from src.model.WarmSearch import WarmSearch
 from src.textGeneration.ChatGPTLanguageModel import ChatGPTLanguageModel
+from src.textGeneration.GenericTogetherAILanguageModel import GenericgetherAILanguageModel
+from src.textGeneration.LLama3TogetherAILanguageModel import LLama3TogetherAILanguageModel
+from src.textGeneration.ExaoneTogetherAILanguageModel import ExaoneTogetherAILanguageModel
 from src.textGeneration.MistralOllamaLanguageModel import MistralOllamaLanguageModel
 from src.textGeneration.MistralTogetherAILanguageModel import MistralTogetherAILanguageModel
 from tenacity import (
@@ -67,10 +70,20 @@ class Tenet:
             self.model.rateLimit = rateLimit
             self.model.sleepTime = sleepTime
             self.model.enableGPT = True
+            return
         if self.languageModel == Constants.LANGUAGE_MODEL_MISTRAL_OLLAMA:
             self.model = MistralOllamaLanguageModel(address)
+            return
         if self.languageModel == Constants.LANGUAGE_MODEL_MISTRAL_TOGETHER_AI:
             self.model = MistralTogetherAILanguageModel()
+            return
+        if self.languageModel == Constants.LANGUAGE_MODEL_LLAMA3_TOGETHER_AI:
+            self.model = LLama3TogetherAILanguageModel()
+            return
+        if self.languageModel == Constants.LANGUAGE_MODEL_EXAONE_TOGETHER_AI:
+            self.model = ExaoneTogetherAILanguageModel()
+            return
+        self.model = GenericgetherAILanguageModel(self.languageModel)
 
     def disableLanguageModel(self):
         self.model.enableGPT = False
