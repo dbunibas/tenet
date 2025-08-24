@@ -22,7 +22,8 @@ class GenericgetherAILanguageModel(ILanguageModel):
         self.toghetherAiModelName = toghetherAiModelName
         self.useCache = True
         #self.cacheFile = Constants.CACHE_DIR + "/cache_Llama3.json"
-        self.cacheFile = str(ConfigSingleton().CACHE_DIR) + "cache_"+ toghetherAiModelName + ".json"
+        modelNameForFile = toghetherAiModelName.replace("/", "_")
+        self.cacheFile = str(ConfigSingleton().CACHE_DIR) + "/cache_"+ modelNameForFile + ".json"
         self.cache = {}
         self.sleepTime = ConfigSingleton().CONFIG_TENET_SLEEP_TIME  # seconds
         if self.useCache and os.path.isfile(self.cacheFile):

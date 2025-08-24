@@ -229,7 +229,7 @@ class Tenet:
                 columnPos = cellEvidence.getColumnPos()
                 # log.debug("row pos: " + str(rowPos))
                 # log.debug("Rows in table: " + str(table.getRowNumber()))
-                if (rowPos <= table.getRowNumber()):
+                if (rowPos < table.getRowNumber()):
                     originalCell = table.getCellByPos(rowPos, columnPos)
                     rowOriginal.append(originalCell)
             if len(rowOriginal) > 0: originalEvidence.addRow(rowOriginal)
