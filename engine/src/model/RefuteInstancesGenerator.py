@@ -5,7 +5,8 @@ import editdistance
 from src import Constants
 from src.LoggedDecorators import timed
 from src.Utils import customDeepCopy
-from src.model.RelationalTable import Cell
+from src.api.model.DTO import HeaderDTO
+from src.model.RelationalTable import Cell, Header
 from src.textGeneration.FlanT5LM import FlanT5LM
 import time
 
@@ -61,7 +62,7 @@ class RefuteInstancesGenerator:
         end = time.time()
         # print("Add/Remove tuples (s):", (end - start))
         if refuteInstance is not None:
-            # print("*** REFUTE-INSTANCE-GENERATOR: shuffle")
+            #print("*** REFUTE-INSTANCE-GENERATOR: shuffle")
             attrFromEvidences = None
             if evidences is not None and len(evidences) > 0:
                 attrFromEvidences = []
@@ -70,16 +71,28 @@ class RefuteInstancesGenerator:
                     for h in headerInE:
                         if h not in attrFromEvidences: attrFromEvidences.append(h)
             start = time.time()
+            #print("*** Attrs from Evidences: ", str(attrFromEvidences))
             refuteInstance, _ = self.shuffleInstanceBigTable(refuteInstance, evidenceSel,
                                                              attrFromEvidences=attrFromEvidences)
             # print("*** REFUTE-INSTANCE-GENERATOR: end shuffle")
             end = time.time()
             # print("Shuffle:", (end - start))
         if refuteInstance is not None:
-            # print("*** REFUTE-INSTANCE-GENERATOR: remove same rows")
+            #print("*** REFUTE-INSTANCE-GENERATOR: remove same rows")
             start = time.time()
+            attrsInEvidenceSel = None
+            if evidenceSel is not None:
+                attrsInEvidenceSel = []
+                for header in evidenceSel.headers:
+                    if isinstance(header, HeaderDTO):
+                        h = Header(header.name)
+                        attrsInEvidenceSel.append(h)
+                    if isinstance(header, Header):
+                        attrsInEvidenceSel.append(header)
+            #print("*** Attrs from Evidences: ", str(attrsInEvidenceSel))
             refuteInstance = self.removeSameRowsBigTable(table,
-                                                         refuteInstance)  ## check if there are identical rows in both instances
+                                                         refuteInstance,
+                                                         attrFromEvidences=attrsInEvidenceSel)  ## check if there are identical rows in both instances
             # print("*** REFUTE-INSTANCE-GENERATOR: end remove same rows")
             end = time.time()
             # print("Remove same rows:", (end - start))
@@ -368,17 +381,34 @@ class RefuteInstancesGenerator:
         return value
 
     # @timed
-    def removeSameRowsBigTable(self, table, instance):
+    def removeSameRowsBigTable(self, table, instance, attrFromEvidences=None):
         # refuteInstance = customDeepCopy(instance)
+        #print("Attrs from Evidences:")
+        for attr in attrFromEvidences:
+            headerInTable = table.getHeaders(attr.name)
+            attr.type = headerInTable.type
+        #print(attrFromEvidences)
         refuteInstance = instance
         refuteRows = refuteInstance.rowsToStringSet()
         originalRows = table.rowsToStringSet()
+        if attrFromEvidences is not None:
+            refuteRows = refuteInstance.rowsToStringSet(attrFromEvidences)
+            originalRows = table.rowsToStringSet(attrFromEvidences)
+        #print("*** Refute Rows:")
+        #print(str(refuteRows))
+        #print("*** Original Rows:")
+        #print(str(originalRows))
         rrToRemove = set()
         for rr in refuteRows:
             if rr in originalRows: rrToRemove.add(rr)
         refuteInstance.buildOptForRemove()
+        #print("RR to remove")
+        #print(rrToRemove)
         for refuteRow in refuteInstance.rows[:]:
             stringRefuteRow = refuteInstance.rowToString(refuteRow)
+            if attrFromEvidences is not None:
+                stringRefuteRow = refuteInstance.rowToString(refuteRow, attrFromEvidences)
+            #print("StringRefuteRow:", stringRefuteRow)
             if stringRefuteRow in rrToRemove:
                 refuteInstance.removeRowObj(refuteRow, False)
         refuteInstance.initPosForCells()

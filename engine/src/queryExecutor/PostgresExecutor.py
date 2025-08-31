@@ -21,6 +21,7 @@ def run(query, table, attrMapping):
     user = "pguser"
     passw = "pguser"
     host = "tenet-postgres"
+    #host = "localhost"
     port = 5432
     dbname = "tenet"
     db = getEngine(user, passw, host, port, dbname)

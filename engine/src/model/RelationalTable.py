@@ -308,6 +308,11 @@ class Table:
             orderedRow[header.name] = cell
         self.orderedRows.append(orderedRow)
 
+    def getHeaders(self, headerName):
+        for header in self.schema:
+            if header.name == headerName: return header
+        return None
+
     # @timed
     def toDict(self):
         if self.lastRowsToDict != len(self.rows):
@@ -388,6 +393,7 @@ class Table:
     def getCellsByHeader(self, header):
         cells = []
         for row in self.orderedRows:
+            #if header.name not in row: continue
             cell = row[header.name]
             cells.append(cell)
         return cells
@@ -469,10 +475,10 @@ class Table:
             self.removeRow(index, init)
 
     # @timed
-    def rowsToStringSet(self):
+    def rowsToStringSet(self, attrs=None):
         rowsString = set()
         for row in self.rows:
-            toReturn = self.rowToString(row)
+            toReturn = self.rowToString(row, attrs)
             rowsString.add(toReturn)
         return rowsString
 
@@ -483,14 +489,30 @@ class Table:
             rowsString.append(toReturn)
         return rowsString
 
+    def number_to_string(self, x):
+        if isinstance(x, int): return str(x)
+        elif isinstance(x, float): return format(x, ".15g")
+        elif isinstance(x, str):
+            try:
+                return str(int(x))
+            except ValueError:
+                try:
+                    return format(float(x), ".15g")
+                except ValueError:
+                    raise ValueError(f"La stringa '{x}' non è un numero valido.")
+        else:
+            raise TypeError("The value should be a number (integer or float) or a string number.")
+
     # @timed
-    def rowToString(self, row):
+    def rowToString(self, row, attrs=None):
         toReturn = ""
-        for header in self.schema:
+        if attrs is None: attrs = self.schema
+        for header in attrs:
             cell = self._findCellByHeader(header, row)
             cellValue = ""
             if cell is not None:
                 cellValue = cell.value
+                if header.type == Constants.NUMERICAL: cellValue = self.number_to_string(cellValue)
             toReturn += str(cellValue) + "|"
         return toReturn
 
