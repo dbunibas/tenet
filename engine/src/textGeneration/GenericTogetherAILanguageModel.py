@@ -49,7 +49,8 @@ class GenericgetherAILanguageModel(ILanguageModel):
                         "role": "user",
                         "content": prompt
                       }
-                    ]
+                    ],
+                    temperature=temperature
             )
             modelOutput = output.choices[0].message.content
             return modelOutput
@@ -73,7 +74,10 @@ class GenericgetherAILanguageModel(ILanguageModel):
                 temperature = 1.0
             for i in range(0, nToGenerate):
                 sentence = self.cleanText(self.invokeModel(prompt, temperature=temperature))
-                if sentence is not None: texts.append(sentence)
+                if sentence is not None:
+                    texts.append(sentence)
+                    temperature = temperature - 0.1
+                    if temperature < 0: temperature = 0
                 if self.sleepTime > 0:
                     time.sleep(self.sleepTime)
             if self.useCache:

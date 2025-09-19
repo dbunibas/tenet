@@ -104,14 +104,30 @@ class TenetService:
         database.inferTypes()
         evidence = mapper.evidenceFromDTOMapper(generateDTO.evidence, generateDTO.name)
         log.debug("SENTENCE TYPE: %s", generateDTO.sentenceType)
-        sentenceType = generateDTO.sentenceType.query
-        sentenceNumber = generateDTO.sentenceNumber
-        sentences = self._generateSentences(database, evidence, sentenceType, sentenceNumber)
-        log.debug("Generated %d sentences: ", len(sentences))
-        for sentence in sentences:
-            log.debug(sentence)
-        log.debug("---")
-        return sentences
+        if generateDTO.sentenceType.query == "Apply All":
+            semanticQueries = self._findSemanticQueries(database, evidence)
+            if len(semanticQueries) > 1: del semanticQueries[-1]
+            sentences = []
+            for semanticQuery in semanticQueries:
+                print("*** SemanticQuery for All:" + str(semanticQuery))
+                sentenceType = semanticQuery.query
+                sentenceNumber = generateDTO.sentenceNumber
+                sentencesByType = self._generateSentences(database, evidence, sentenceType, sentenceNumber)
+                log.debug("Generated %d sentences: ", len(sentencesByType))
+                for sentence in sentencesByType:
+                    log.debug(sentence)
+                    sentences.append(sentence)
+                log.debug("---")
+            return sentences
+        else:
+            sentenceType = generateDTO.sentenceType.query
+            sentenceNumber = generateDTO.sentenceNumber
+            sentences = self._generateSentences(database, evidence, sentenceType, sentenceNumber)
+            log.debug("Generated %d sentences: ", len(sentences))
+            for sentence in sentences:
+                log.debug(sentence)
+            log.debug("---")
+            return sentences
 
     def exportExamples(self, exportRequestDTO: ExportRequestDTO) -> list[ExportSentencesDTO]:
         # time.sleep(10)
@@ -193,6 +209,7 @@ class TenetService:
             semanticQueries.append(SemanticQueryDTO(name=operation.__str__(), query=semanticQuery))
             log.debug("OPERATION QUERY: %s", operation.__str__())
         log.debug("Semantic queries: %s", semanticQueries)
+        semanticQueries.append(SemanticQueryDTO(name="Apply All", query="Apply All"))
         return semanticQueries
 
     def _generateSentences(self, database: Database, evidence: Evidence, task: str, sentenceNumber: int, prompt=None) -> \
@@ -218,6 +235,7 @@ class TenetService:
         semantics = self._findSemanticQueries(database, evidence)
         generated: list[ExportSentencesDTO] = []
         for semantic in semantics:
+            if semantic.name == "Apply All": continue
             tenet = Tenet(database, self.seed, self.operations, self.comparisons, bestEvidences=self.bestEvidences,
                           sentencesPerExample=None, languageModel=self.languageModel, rateLimit=self.rateLimit,
                           sleepTime=self.sleepTime)

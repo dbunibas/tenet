@@ -47,7 +47,8 @@ class ExaoneTogetherAILanguageModel(ILanguageModel):
                         "role": "user",
                         "content": prompt
                       }
-                    ]
+                    ],
+                    temperature=temperature
             )
             modelOutput = output.choices[0].message.content
             return modelOutput
@@ -71,7 +72,10 @@ class ExaoneTogetherAILanguageModel(ILanguageModel):
                 temperature = 1.0
             for i in range(0, nToGenerate):
                 sentence = self.cleanText(self.invokeModel(prompt, temperature=temperature))
-                if sentence is not None: texts.append(sentence)
+                if sentence is not None:
+                    texts.append(sentence)
+                    temperature = temperature - 0.1
+                    if temperature < 0: temperature = 0
                 if self.sleepTime > 0:
                     time.sleep(self.sleepTime)
             if self.useCache:
@@ -379,7 +383,7 @@ To help you in adding semantics to the sentence, I will also add as metadata som
 
 We have a set of sentences and the corresponding semantics are reported below:
 - read(attrs)[*] --> read the values associated to the attrs list
-- compare(comparator, attr) --> compare two or more rows on the attribute, is usually used in combination with read
+- compare(comparator, attr) --> compare two or more rows on the attribute, is usually used in combination with read. Compare using the row order where the first row is the subject
 - compute(function, attr) = value --> verbalize the function associated to the attribute where the values is value. Functions are min, max, avg, count and so on
 - filter(attr) condition --> filter the rows where for the attribute attr the condition holds
 - percentage(attribute, comparator) percValue --> read the percValue associated to the attribute
@@ -387,6 +391,7 @@ We have a set of sentences and the corresponding semantics are reported below:
 
 Here are some examples:"""
         prompt = prompt + "\n==========".join(examples) + "\n=========="
+        prompt = prompt + "\n. Do not add any comments to the sentence. Do not add any information to the sentence that is not explicitly expressed by the given functions."
         return prompt
 
     def linearizeEvidence(self, evidence) -> str:

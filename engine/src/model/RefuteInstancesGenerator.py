@@ -321,7 +321,9 @@ class RefuteInstancesGenerator:
             minVal = min(valuesInColumn)
             maxVal = max(valuesInColumn)
             if type != Constants.STRATEGY_CHANGE_MIN and type != Constants.STRATEGY_CHANGE_MAX:
-                if int(minVal) == minVal and int(maxVal) == maxVal:
+                if int(minVal) == minVal and int(maxVal) == maxVal and minVal == maxVal:
+                    return int(minVal) - 1
+                if int(minVal) == minVal and int(maxVal) == maxVal and minVal < maxVal:
                     value = int(random.randrange(minVal, maxVal))
                     return value
                 else:
